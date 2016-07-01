@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Handymap</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+    <script src="/datamaps.all.js"></script>
+    <style type="text/css">
+      html {
+        height: 100%;
+      }
+
+      body {
+        background-color: #1d1d1d; 
+        height: 100%;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #map {
+        width: 100%; 
+      }
+
+      #count {
+        color: #00CDED;
+        position: absolute;
+        bottom: 1em;
+        right: 1em;
+        font-size: 2em;
+        font-family: "Arial Black", Gadget, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map">
+    </div>
+    <div id="count">
+  </body>
+  <footer>
+    <script>
+      var LAT_MIN = 24;
+      var LAT_MAX = 50;
+      var LONG_MIN = -124;
+      var LONG_MAX = -66;
+      var WIDTH_DENOMINATOR = 80.0;
+      var DURATION_SEC = 5;
+
+      var BLUE = '#00CDED';
+      var GREEN = '#42D0B3';
+      var PURPLE = '#993092';
+      var RED = '#FF5C5C';
+      var YELLOW = '#FFB600';
+      var WHITE = '#FFFFFF';
+      var BLACK = '#000000';
+
+      function Bubble(data) {
+        this.radius = bubbleRadius(),
+        this.latitude = parseFloat(data.latitude) || randLat(),
+        this.longitude = parseFloat(data.longitude) || randLong(),
+        this.borderColor = WHITE,
+        this.fillKey = data.color || randColor(),
+        this.borderWidth = 0.5,
+        this.fillOpacity = 0.8,
+        this.params = {
+          exitDelay: (data.duration || DURATION_SEC) * 1000
+        }
+      }
+
+      function bubbleRadius() {
+        width = d3.select("body")
+                  .node()
+                  .getBoundingClientRect()
+                  .width;
+
+        return width / WIDTH_DENOMINATOR;
+      }
+
+      function randColor() {
+        colors = [BLUE, GREEN, PURPLE, RED, YELLOW];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      function randLat() {
+        return rand(LAT_MIN, LAT_MAX);
+      }
+
+      function randLong() {
+        return rand(LONG_MIN, LONG_MAX);
+      }
+
+      function rand(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+      var count = 0;
+
+      Datamap.prototype.addBubble = function(bubble) {
+        console.log(bubble);
+
+        this.bubbles([bubble], bubble.params);
+        this.bubbles([], bubble.params);
+
+        d3.select('#count')
+          .text(++count);
+      }
+
+      var map = new Datamap({
+        scope: 'usa',
+        element: document.getElementById('map'),
+        geographyConfig: {
+          popupOnHover: true,
+          highlightOnHover: true,
+          hideHawaiiAndAlaska: true    
+        },
+        geographyConfig: {
+          borderColor: BLUE
+        },
+        responsive: true,
+        fills: {
+          defaultFill: BLUE,
+          [WHITE]: WHITE,
+          [BLACK]: BLACK,
+          [BLUE]: BLUE,
+          [PURPLE]: PURPLE,
+          [RED]: RED,
+          [YELLOW]: YELLOW,
+          [GREEN]: GREEN
+        }
+      });
+
+      d3.select(window).on('resize', function() {
+        map.resize();
+      });
+
+      var socket = io();
+      socket.on('addBubble', function(data) {
+        map.addBubble(new Bubble(data))
+      });
+    </script>
+  </footer>
+</html>
