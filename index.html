@@ -15,16 +15,17 @@
       }
 
       body {
-        background-color: #1d1d1d; 
+        background-color: #1d1d1d;
         height: 100%;
         margin: 0;
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-direction: column;
       }
 
       #map {
-        width: 100%; 
+        width: 100%;
       }
 
       #count {
@@ -35,16 +36,20 @@
         font-size: 2em;
         font-family: "Arial Black", Gadget, sans-serif;
       }
+
+      .flip-clock-wrapper {
+        width: inherit;
+      }
     </style>
   </head>
   <body>
     <div id="map"></div>
-    
+
     <script src="/assets/js/libs/jquery.js"></script>
     <script src="/assets/js/flipclock.js"></script>
 
     <div class="counter"></div>
-    
+
     <script type="text/javascript">
       var clock = $('.counter').FlipClock(995, {
         clockFace: 'Counter'
@@ -66,7 +71,7 @@
       var LONG_MAX = -66;
       var WIDTH_DENOMINATOR = 50.0;
       var DEFAULT_DURATION_SEC = 5;
-      
+
       var BLUE = '#00CDED';
       var GREEN = '#42D0B3';
       var PURPLE = '#993092';
@@ -112,7 +117,7 @@
         this.latitude = parseFloat(data.latitude) || randLat(),
         this.longitude = parseFloat(data.longitude) || randLong(),
         this.borderColor = WHITE,
-        this.fillKey = 'GREEN', 
+        this.fillKey = 'GREEN',
         this.borderWidth = 0.5,
         this.fillOpacity = 1.0
       }
@@ -127,7 +132,7 @@
         allBubbles.pop(bubble);
         this.bubbles(allBubbles, bubble.params);
         allBubbles.push(lastingBubble);
-        
+
         this.bubbles(allBubbles, bubble.params);
 
         d3.select('#count')
