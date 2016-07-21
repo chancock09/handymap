@@ -9,6 +9,22 @@ app.get('/', function(req, res){
   res.sendfile('index.html');
 });
 
+app.get('/clock.html', function(req, res){
+  res.sendfile('clock.html');
+});
+
+app.get('/assets/flipclock.css', function(req, res){
+  res.sendfile('assets/flipclock.css');
+});
+
+app.get('/assets/js/flipclock.js', function(req, res){
+  res.sendfile('assets/js/flipclock.js');
+});
+
+app.get('/assets/js/libs/jquery.js', function(req, res){
+  res.sendfile('assets/js/libs/jquery.js');
+});
+
 // Expects bubble object:
 // {
 //   latitude: 37.2350, # Required

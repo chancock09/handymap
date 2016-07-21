@@ -2,6 +2,8 @@
 <html>
   <head>
     <title>Handymap</title>
+    <link rel="stylesheet" href="/assets/flipclock.css">
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
@@ -36,9 +38,25 @@
     </style>
   </head>
   <body>
-    <div id="map">
-    </div>
-    <div id="count">
+    <div id="map"></div>
+    
+    <script src="/assets/js/libs/jquery.js"></script>
+    <script src="/assets/js/flipclock.js"></script>
+
+    <div class="counter"></div>
+    
+    <script type="text/javascript">
+      var clock = $('.counter').FlipClock(995, {
+        clockFace: 'Counter'
+      });
+
+      setTimeout(function() {
+        setInterval(function() {
+          clock.increment();
+        }, 1000);
+      });
+    </script>
+
   </body>
   <footer>
     <script>
@@ -46,9 +64,9 @@
       var LAT_MAX = 50;
       var LONG_MIN = -124;
       var LONG_MAX = -66;
-      var WIDTH_DENOMINATOR = 80.0;
-      var DURATION_SEC = 5;
-
+      var WIDTH_DENOMINATOR = 50.0;
+      var DEFAULT_DURATION_SEC = 5;
+      
       var BLUE = '#00CDED';
       var GREEN = '#42D0B3';
       var PURPLE = '#993092';
@@ -58,32 +76,101 @@
       var BLACK = '#000000';
 
       function Bubble(data) {
+        this.name = textOrUnknown(data.name),
+        this.booking_id = data.booking_id
+        this.zip = data.zipcode
+        this.timestamp = data.time_stamp
         this.radius = bubbleRadius(),
         this.latitude = parseFloat(data.latitude) || randLat(),
         this.longitude = parseFloat(data.longitude) || randLong(),
         this.borderColor = WHITE,
-        this.fillKey = data.color || randColor(),
+        this.fillKey = data.color,
         this.borderWidth = 0.5,
         this.fillOpacity = 0.8,
         this.params = {
-          exitDelay: (data.duration || DURATION_SEC) * 1000
+          exitDelay: (data.duration || DEFAULT_DURATION_SEC) * 1000,
+          popupTemplate: function (geo, data) {
+            return ['<div class="hoverinfo">' +  data.name,
+            '<br/>Booking ID: ' +  data.booking_id,
+            '<br/>Zip: ' +  textOrUnknown(data.zip) + '',
+            '<br/>Time: ' +  textOrUnknown(data.timestamp) + '',
+            '</div>'].join('');
+          }
         }
       }
 
-      function bubbleRadius() {
-        width = d3.select("body")
-                  .node()
-                  .getBoundingClientRect()
-                  .width;
-
-        return width / WIDTH_DENOMINATOR;
+      function textOrUnknown(text) {
+        return String(text) || "Unknown"
       }
 
-      function randColor() {
-        colors = [BLUE, GREEN, PURPLE, RED, YELLOW];
-        return colors[Math.floor(Math.random() * colors.length)];
+      function EventPointBubble(data) {
+        this.name = textOrUnknown(data.name),
+        this.booking_id = data.booking_id
+        this.zip = data.zipcode
+        this.timestamp = data.time_stamp
+        this.radius = 2,
+        this.latitude = parseFloat(data.latitude) || randLat(),
+        this.longitude = parseFloat(data.longitude) || randLong(),
+        this.borderColor = WHITE,
+        this.fillKey = 'GREEN', 
+        this.borderWidth = 0.5,
+        this.fillOpacity = 1.0
       }
 
+      var count = 0;
+      var allBubbles = [];
+
+      Datamap.prototype.plotDataBubbles = function(bubble, lastingBubble) {
+        // Push and pop to bubble with delay then add the "lasting bubble"
+        allBubbles.push(bubble);
+        this.bubbles(allBubbles, bubble.params);
+        allBubbles.pop(bubble);
+        this.bubbles(allBubbles, bubble.params);
+        allBubbles.push(lastingBubble);
+        
+        this.bubbles(allBubbles, bubble.params);
+
+        d3.select('#count')
+          .text(++count);
+      }
+
+      var map = new Datamap({
+        scope: 'usa',
+        element: document.getElementById('map'),
+        geographyConfig: {
+          borderColor: WHITE,
+          hideHawaiiAndAlaska: true,
+          popupOnHover: true,
+          highlightOnHover: false
+        },
+        bubblesConfig: {
+          highlightFillColor: YELLOW
+        },
+        responsive: true,
+        fills: {
+        'BLUE': BLUE,
+        'GREEN': GREEN,
+        'PURPLE': PURPLE,
+        'RED': RED,
+        'YELLOW': YELLOW,
+        'WHITE': WHITE,
+        'BLACK': BLACK,
+        defaultFill: BLUE
+        }
+      });
+
+      d3.select(window).on('resize', function() {
+        map.resize();
+      });
+
+      // SOCKET METHOD
+
+      var socket = io();
+      socket.on('addBubble', function(data) {
+        map.plotDataBubbles(new Bubble(data), new EventPointBubble(data))
+      });
+
+      // HELPER METHODS
       function randLat() {
         return rand(LAT_MIN, LAT_MAX);
       }
@@ -96,50 +183,14 @@
         return Math.random() * (max - min) + min;
       }
 
-      var count = 0;
+      function bubbleRadius() {
+        width = d3.select("body")
+                  .node()
+                  .getBoundingClientRect()
+                  .width;
 
-      Datamap.prototype.addBubble = function(bubble) {
-        console.log(bubble);
-
-        this.bubbles([bubble], bubble.params);
-        this.bubbles([], bubble.params);
-
-        d3.select('#count')
-          .text(++count);
+        return width / WIDTH_DENOMINATOR;
       }
-
-      var map = new Datamap({
-        scope: 'usa',
-        element: document.getElementById('map'),
-        geographyConfig: {
-          popupOnHover: true,
-          highlightOnHover: true,
-          hideHawaiiAndAlaska: true    
-        },
-        geographyConfig: {
-          borderColor: BLUE
-        },
-        responsive: true,
-        fills: {
-          defaultFill: BLUE,
-          [WHITE]: WHITE,
-          [BLACK]: BLACK,
-          [BLUE]: BLUE,
-          [PURPLE]: PURPLE,
-          [RED]: RED,
-          [YELLOW]: YELLOW,
-          [GREEN]: GREEN
-        }
-      });
-
-      d3.select(window).on('resize', function() {
-        map.resize();
-      });
-
-      var socket = io();
-      socket.on('addBubble', function(data) {
-        map.addBubble(new Bubble(data))
-      });
     </script>
   </footer>
 </html>

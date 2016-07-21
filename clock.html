@@ -1,0 +1,24 @@
+
+<html>
+  <head>
+    <link rel="stylesheet" href="/assets/flipclock.css">
+  </head>
+  <body>
+    <script src="/assets/js/libs/jquery.js"></script>
+    <script src="/assets/js/flipclock.js"></script>
+    
+    <div class="counter"></div>
+    <script type="text/javascript">
+      var clock = $('.counter').FlipClock(100, {
+        clockFace: 'Counter'
+      });
+
+      setTimeout(function() {
+        setInterval(function() {
+          clock.increment();
+        }, 1000);
+      });
+    </script>
+    
+  </body>
+</html>
