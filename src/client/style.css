@@ -584,3 +584,65 @@ textarea {
     transition: none !important;
   }
 }
+.map-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.fullscreen-button {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 10px;
+  font: 11px var(--sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fullscreen-button:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.map-stage {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+body.map-expanded {
+  overflow: hidden;
+}
+.map-panel.is-expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  width: 100%;
+  height: 100dvh;
+  background: var(--panel);
+  overflow: auto;
+}
+.map-panel.is-expanded .map-stage {
+  overflow: hidden;
+}
+.map-panel.is-expanded .world-map {
+  flex: none;
+  margin: 0;
+}
+.map-panel.is-expanded > :not(.map-stage) {
+  flex-shrink: 0;
+}
+.map-panel.is-expanded .map-hint {
+  display: none;
+}
+@media (max-width: 720px) {
+  .map-toolbar {
+    flex-wrap: wrap;
+  }
+  .map-controls {
+    margin-left: auto;
+    gap: 10px;
+  }
+}

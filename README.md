@@ -3,6 +3,7 @@
 [HandyMap](https://handymap.gobbi.tech) is a public world map for small, shared signals.
 Send a location, title, sentence, and optional image URL with one JSON request.
 The ping pulses for two seconds, then leaves a dot for another minute.
+Use **Full screen** above the map to expand it. Press Escape or **Exit full screen** to return.
 
 Read the [API guide](https://handymap.gobbi.tech/docs) for examples and error responses.
 

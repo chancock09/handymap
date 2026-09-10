@@ -1,4 +1,5 @@
 import "./style.css";
+import { setupFullscreen } from "./fullscreen";
 import { geoNaturalEarth1, geoPath, geoGraticule10 } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
@@ -62,9 +63,29 @@ function placeCard() {
   const bounds = dot.getBoundingClientRect();
   const width = card.offsetWidth;
   const height = card.offsetHeight;
-  card.style.left = `${Math.max(12, Math.min(bounds.left + bounds.width / 2 - width / 2, window.innerWidth - width - 12))}px`;
-  const top = bounds.top - height - 14;
-  card.style.top = `${Math.max(12, Math.min(top >= 12 ? top : bounds.bottom + 14, window.innerHeight - height - 12))}px`;
+  const clamp = (value: number, available: number) =>
+    Math.max(12, Math.min(value, available - 12));
+  let left = clamp(
+    bounds.left + bounds.width / 2 - width / 2,
+    window.innerWidth - width,
+  );
+  let top = bounds.top - height - 14;
+  if (top < 12) {
+    top = bounds.bottom + 14;
+    if (top + height > window.innerHeight - 12) {
+      top = clamp(
+        bounds.top + bounds.height / 2 - height / 2,
+        window.innerHeight - height,
+      );
+      if (bounds.right + 14 + width <= window.innerWidth - 12) {
+        left = bounds.right + 14;
+      } else if (bounds.left - width - 14 >= 12) {
+        left = bounds.left - width - 14;
+      }
+    }
+  }
+  card.style.left = `${left}px`;
+  card.style.top = `${clamp(top, window.innerHeight - height)}px`;
 }
 
 function showCard(ping: Ping) {
@@ -127,6 +148,7 @@ document.addEventListener("pointerdown", (event) => {
 });
 window.addEventListener("resize", placeCard);
 window.addEventListener("scroll", placeCard, { passive: true });
+setupFullscreen(placeCard);
 
 function addPing(ping: Ping, animate: boolean) {
   if (ping.expiresAt <= now() || pings.has(ping.id)) return;

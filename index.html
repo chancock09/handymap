@@ -38,31 +38,44 @@
         </p>
       </section>
       <div class="workspace">
-        <section class="map-panel" aria-label="Live world map">
+        <section id="map-panel" class="map-panel" aria-label="Live world map">
           <div class="map-toolbar">
-            <span class="eyebrow">THE WORLD, RIGHT NOW</span
-            ><span
-              id="connection"
-              class="connection"
-              role="status"
-              data-state="connecting"
-              >Connecting</span
-            >
+            <span class="eyebrow">THE WORLD, RIGHT NOW</span>
+            <div class="map-controls">
+              <span
+                id="connection"
+                class="connection"
+                role="status"
+                data-state="connecting"
+                >Connecting</span
+              >
+              <button
+                id="fullscreen"
+                class="fullscreen-button"
+                type="button"
+                aria-controls="map-panel"
+                aria-pressed="false"
+              >
+                Full screen
+              </button>
+            </div>
           </div>
-          <div id="map" class="world-map">
-            <svg
-              id="world"
-              viewBox="0 0 1000 560"
-              aria-label="World map. Choose coordinates with the form or select a point on the map."
-              role="img"
-            ></svg>
-            <div id="dots" class="dots"></div>
-            <span
-              id="selection"
-              class="selection"
-              hidden
-              aria-hidden="true"
-            ></span>
+          <div id="map-stage" class="map-stage">
+            <div id="map" class="world-map">
+              <svg
+                id="world"
+                viewBox="0 0 1000 560"
+                aria-label="World map. Choose coordinates with the form or select a point on the map."
+                role="img"
+              ></svg>
+              <div id="dots" class="dots"></div>
+              <span
+                id="selection"
+                class="selection"
+                hidden
+                aria-hidden="true"
+              ></span>
+            </div>
           </div>
           <div class="map-bottom">
             <span

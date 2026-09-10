@@ -126,7 +126,7 @@ Do not change the shared wildcard or the bypass destinations for other sites.
 ## Deployment record — 2026-09-10
 
 The site is public at `https://handymap.gobbi.tech`.
-The current Worker version is `6d46b9db-372b-41d8-882b-221ffdf6c3bd`.
+The current Worker version is `446f664a-fd27-4932-b32d-7e023131db09`.
 The deployment uses the existing account and does not change its billing plan.
 The available API tokens cannot read billing subscriptions; the infrastructure runbook records Workers Free.
 
@@ -136,7 +136,7 @@ All prior bypass destinations and policy IDs remain unchanged.
 The registry update is in infrastructure pull request 9.
 
 The public smoke check passes for the map, API guide, health endpoint, CORS preflight, and WebSocket snapshot.
-The local suite passes 30 server tests and 10 browser tests.
+The local suite passes 30 server tests and 14 browser tests.
 The dependency audit reports no known vulnerabilities.
 
 Two public browser windows received the release-check ping.
