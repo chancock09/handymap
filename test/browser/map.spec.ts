@@ -94,19 +94,23 @@ test("submits through the form and keeps text inert", async ({ page }) => {
 test("expires sixty seconds after creation without a reconnect extension", async ({
   page,
 }) => {
-  const start = Date.now();
-  await page.clock.install({ time: start });
   let send: (message: string) => void;
   await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     send = (message) => socket.send(message);
     socket.send(
-      JSON.stringify({ type: "snapshot", pings: [], serverTime: start }),
+      JSON.stringify({ type: "snapshot", pings: [], serverTime: Date.now() }),
     );
   });
   await page.goto("/");
   await expect(
     page.getByText("Live connection", { exact: true }),
   ).toBeVisible();
+  // Install the fake clock after the socket opens so a fast-forward cannot fire the real
+  // heartbeat deadline and force a reconnect, and pause it so slow setup cannot eat the lifetime.
+  const loaded = Date.now();
+  await page.clock.install({ time: loaded });
+  const start = loaded + 10_000;
+  await page.clock.pauseAt(start);
   const ping = {
     ...payload,
     id: "lifetime",
