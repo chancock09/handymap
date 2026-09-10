@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "handymap",
+  "main": "src/server/index.ts",
+  "compatibility_date": "2026-08-22",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "handymap.gobbi.tech", "custom_domain": true }],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "html_handling": "drop-trailing-slash",
+    "run_worker_first": ["/api/*", "/ws", "/healthz"],
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "MAP", "class_name": "MapRoom" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MapRoom"] }],
+  "vars": { "MAX_PINGS_PER_DAY": "10000", "MAX_VIEWERS": "100" },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": false,
+      "head_sampling_rate": 0.1,
+    },
+  },
+}
