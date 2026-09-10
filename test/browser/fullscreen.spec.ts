@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function openMap(page: Page) {
-  await page.routeWebSocket("**/ws", (socket) =>
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) =>
     socket.send(
       JSON.stringify({
         type: "snapshot",

@@ -14,7 +14,7 @@ function ping(id: string, longitude = -50, lifetime = 62_000): Ping {
 }
 
 async function openMap(page: Page, pings: Ping[] = []) {
-  await page.routeWebSocket("**/ws", (socket) => {
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     socket.send(
       JSON.stringify({ type: "snapshot", pings, serverTime: Date.now() }),
     );
@@ -309,7 +309,9 @@ test("uses the composer inside full screen and keeps Escape within the dialog", 
 test("distinguishes an unavailable connection from a quiet map", async ({
   page,
 }) => {
-  await page.routeWebSocket("**/ws", (socket) => socket.close({ code: 1013 }));
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) =>
+    socket.close({ code: 1013 }),
+  );
   await page.goto("/");
   await expect(page.locator("#connection")).toHaveText("At capacity");
   await expect(page.locator("#activity-empty")).toHaveText(

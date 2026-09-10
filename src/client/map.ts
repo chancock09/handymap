@@ -1,6 +1,7 @@
 import "./style.css";
 import { setupFullscreen } from "./fullscreen";
 import { setupComposer } from "./composer";
+import { showPresence, viewerId } from "./presence";
 import { coordinates, setupActivity } from "./activity";
 import { geoEqualEarth, geoPath, geoGraticule10 } from "d3-geo";
 import { feature } from "topojson-client";
@@ -339,10 +340,16 @@ let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
 let heartbeatDeadline: ReturnType<typeof setTimeout> | undefined;
 let attempts = 0;
 let stopped = false;
+const viewer = viewerId();
 function connection(state: string, label: string, message = "") {
   const status = element("connection");
   status.dataset.state = state;
   status.textContent = label;
+  if (state !== "live")
+    element("presence").textContent =
+      state === "connecting"
+        ? "Checking who’s here…"
+        : "Online count unavailable";
   element("connection-notice").hidden = !message;
   element("connection-message").textContent = message;
   updateCount();
@@ -353,6 +360,7 @@ function connect() {
   connection("connecting", "Connecting");
   const url = new URL("/ws", location.href);
   url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
+  url.searchParams.set("viewer", viewer);
   clearInterval(heartbeatTimer);
   clearTimeout(heartbeatDeadline);
   const previous = socket;
@@ -391,6 +399,9 @@ function connect() {
       updateCount();
       attempts = 0;
       connection("live", "Live connection");
+      showPresence(data.viewers);
+    } else if (data.type === "presence") {
+      showPresence(data.viewers);
     } else if (data.type === "ping") addPing(data.ping, true);
   });
   current.addEventListener("close", (event) => {

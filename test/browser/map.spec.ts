@@ -79,7 +79,7 @@ test("expires after the two-second pulse and following minute without a reconnec
   const start = Date.now();
   await page.clock.install({ time: start });
   let send: (message: string) => void;
-  await page.routeWebSocket("**/ws", (socket) => {
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     send = (message) => socket.send(message);
     socket.send(
       JSON.stringify({ type: "snapshot", pings: [], serverTime: start }),
@@ -117,7 +117,7 @@ test("expires after the two-second pulse and following minute without a reconnec
 
 test("shows capacity and allows a manual reconnect", async ({ page }) => {
   let connections = 0;
-  await page.routeWebSocket("**/ws", (socket) => {
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     if (++connections === 1)
       socket.close({ code: 1013, reason: "viewer_capacity" });
     else
@@ -135,7 +135,7 @@ test("shows capacity and allows a manual reconnect", async ({ page }) => {
 });
 
 test("shows a failed submission without adding a dot", async ({ page }) => {
-  await page.routeWebSocket("**/ws", (socket) =>
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) =>
     socket.send(
       JSON.stringify({ type: "snapshot", pings: [], serverTime: Date.now() }),
     ),
@@ -274,7 +274,7 @@ test("reconnects after connection loss and replaces the previous snapshot", asyn
     createdAt: Date.now(),
     expiresAt: Date.now() + 62_000,
   };
-  await page.routeWebSocket("**/ws", (socket) => {
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     connections++;
     disconnect = () => socket.close({ code: 1011, reason: "test_disconnect" });
     socket.send(

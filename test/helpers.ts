@@ -36,8 +36,10 @@ export async function setState(update: Record<string, unknown>) {
     await state.storage.put("state", { ...existing, ...update });
   });
 }
-export async function connect() {
-  const response = await SELF.fetch("https://handymap.test/ws", {
+export async function connect(viewer?: string) {
+  const url = new URL("https://handymap.test/ws");
+  if (viewer) url.searchParams.set("viewer", viewer);
+  const response = await SELF.fetch(url, {
     headers: { Upgrade: "websocket" },
   });
   expect(response.status).toBe(101);

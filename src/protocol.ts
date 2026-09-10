@@ -19,7 +19,8 @@ export interface Ping extends PingInput {
 }
 
 export type MapEvent =
-  | { type: "snapshot"; pings: Ping[]; serverTime: number }
+  | { type: "snapshot"; pings: Ping[]; serverTime: number; viewers: number }
+  | { type: "presence"; viewers: number; serverTime: number }
   | { type: "ping"; ping: Ping; serverTime: number };
 
 export interface ApiError {

@@ -24,8 +24,12 @@ it("broadcasts the same accepted ping to two viewers once and restores it for la
   await evictDurableObject(stub());
   const late = await connect();
   expect(await late.next("snapshot")).toMatchObject({ pings: [ping] });
-  expect(a.messages).toHaveLength(0);
-  expect(b.messages).toHaveLength(0);
+  expect(a.messages).not.toContainEqual(
+    expect.objectContaining({ type: "ping" }),
+  );
+  expect(b.messages).not.toContainEqual(
+    expect.objectContaining({ type: "ping" }),
+  );
 });
 
 it("filters expired pings from snapshots and removes payloads with an alarm", async () => {
@@ -102,6 +106,37 @@ it("closes public sessions on restart and preserves private sessions", async () 
   const response = await post();
   expect(response.status).toBe(201);
   expect(await legacy.closed()).toBe(1008);
-  expect(legacy.messages).toHaveLength(0);
+  expect(legacy.messages).not.toContainEqual(
+    expect.objectContaining({ type: "ping" }),
+  );
   expect(await current.next("ping")).toMatchObject({ ping: input });
+});
+
+it("counts browsers once across tabs and hibernation, then updates on disconnect", async () => {
+  const id = crypto.randomUUID();
+  const first = await connect(id);
+  expect(await first.next("snapshot")).toMatchObject({ viewers: 1 });
+  const tab = await connect(id);
+  expect(await tab.next("snapshot")).toMatchObject({ viewers: 1 });
+  expect(await first.next("presence")).toMatchObject({ viewers: 1 });
+  await evictDurableObject(stub());
+  const other = await connect(crypto.randomUUID());
+  expect(await other.next("snapshot")).toMatchObject({ viewers: 2 });
+  expect(await first.next("presence")).toMatchObject({ viewers: 2 });
+  expect(await tab.next("presence")).toMatchObject({ viewers: 2 });
+  tab.ws.close(1000);
+  await tab.closed();
+  expect(await first.next("presence")).toMatchObject({ viewers: 2 });
+  expect(await other.next("presence")).toMatchObject({ viewers: 2 });
+  first.ws.close(1000);
+  await first.closed();
+  expect(await other.next("presence")).toMatchObject({ viewers: 1 });
+});
+
+it("counts viewers without a valid browser identifier separately", async () => {
+  const first = await connect("invalid");
+  expect(await first.next("snapshot")).toMatchObject({ viewers: 1 });
+  const other = await connect("invalid");
+  expect(await other.next("snapshot")).toMatchObject({ viewers: 2 });
+  expect(await first.next("presence")).toMatchObject({ viewers: 2 });
 });

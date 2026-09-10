@@ -5,6 +5,9 @@ Send a location, title, sentence, and optional image URL with one JSON request.
 The ping pulses for two seconds, then leaves a dot for another minute.
 Use **Full screen** above the map to expand it. Press Escape or **Exit full screen** to return.
 Click the map to choose a location and open the story form directly.
+The header shows how many other visitors are online. When no one else is online, it shows **0 others online**.
+The count uses connected browsers. Tabs in one browser share a local identifier and count once when local storage is available.
+Separate browsers count separately. The site clears the count when its live connection stops.
 Use **Send a ping** to open the form and enter coordinates manually.
 The form keeps your draft when you close it. An accepted ping opens on the map.
 The map fills the available screen. **Live feed** shows active pings in a horizontal ticker at the bottom.
@@ -98,7 +101,10 @@ The image host receives that browser request. HandyMap does not fetch or store i
 
 The Worker serves `/api/*`, `/ws`, and `/healthz`.
 Cloudflare serves other paths as static assets without Worker execution.
-The `/ws` connection first receives a `snapshot` with active pings and server time.
+The `/ws` connection first receives a `snapshot` with active pings, server time, and a `viewers` count that includes the current browser.
+Clients can send a UUID in the `viewer` query parameter to share one identity across tabs.
+The server assigns a separate identity to each connection without a valid UUID.
+A `presence` event supplies `viewers` and `serverTime` when a connection opens or closes.
 Each accepted ping produces a `ping` event with server time.
 The client uses the server timestamps for expiry and replaces its state on reconnect.
 WebSocket Hibernation keeps idle connections open without a running event loop.
