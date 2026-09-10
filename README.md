@@ -68,6 +68,9 @@ Anonymous scripts cannot pass the private Access gate. Cross-origin preflight re
 
 One Durable Object controls the world map.
 It accepts one valid ping every 1,000 milliseconds across all callers.
+It also accepts at most one ping per minute from each source address.
+The Worker hashes the `CF-Connecting-IP` value; the room stores the hash for 60 seconds, not the address.
+Requests without a client address share one source bucket.
 Excess requests receive `429` with `Retry-After`; the server does not queue them.
 Invalid requests and preflight requests do not consume the acceptance slot.
 
@@ -78,8 +81,8 @@ Invalid requests and preflight requests do not consume the acceptance slot.
 | `MAX_PINGS_PER_DAY` | 10,000 accepted pings, reset at midnight UTC |
 | `MAX_VIEWERS`       | 100 live WebSocket connections               |
 
-Daily counts and the last acceptance time survive restarts and deployments.
-The one-second limit also applies across midnight.
+Daily counts, the last acceptance time, and the source window survive restarts and deployments.
+The one-second and one-minute limits also apply across midnight.
 The daily cap does not limit rejected requests or connection attempts.
 Cloudflare counts those requests against its shared account quota.
 Keep the account on Workers Free; service interruptions are acceptable when its quota runs out.

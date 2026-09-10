@@ -1,9 +1,19 @@
 import { expect, it } from "vitest";
 import { evictDurableObject } from "cloudflare:test";
-import { input, post, SELF, stub, setState } from "./helpers";
+import {
+  address,
+  input,
+  post,
+  runInDurableObject,
+  SELF,
+  stub,
+  setState,
+} from "./helpers";
 import { readInput, validateInput } from "../src/server/http";
 import { decideAcceptance } from "../src/server/room";
 import type { Ping } from "../src/protocol";
+
+const other = "198.51.100.7";
 
 it("accepts zero coordinates, trims text, and returns a fixed lifetime with public CORS", async () => {
   const response = await post({
@@ -22,8 +32,10 @@ it("accepts zero coordinates, trims text, and returns a fixed lifetime with publ
   expect(ping.expiresAt - ping.createdAt).toBe(62_000);
 });
 
-it("accepts exactly one request from a simultaneous burst", async () => {
-  const responses = await Promise.all(Array.from({ length: 20 }, () => post()));
+it("accepts exactly one request from a simultaneous burst of distinct sources", async () => {
+  const responses = await Promise.all(
+    Array.from({ length: 20 }, (_, i) => post(input, `203.0.113.${i + 1}`)),
+  );
   expect(responses.filter((response) => response.status === 201)).toHaveLength(
     1,
   );
@@ -44,34 +56,113 @@ it("rejects at 999 milliseconds and accepts at exactly 1000 without a fixed-wind
     day: "2026-09-10",
     count: 1,
     pings: [],
+    sources: {},
   };
-  expect(decideAcceptance(state, time + 999, 10_000)).toMatchObject({
+  expect(decideAcceptance(state, time + 999, 10_000, "a")).toMatchObject({
     code: "rate_limited",
     retryAfterMs: 1,
   });
-  expect(decideAcceptance(state, time + 1000, 10_000)).toEqual({
+  expect(decideAcceptance(state, time + 1000, 10_000, "a")).toEqual({
     day: "2026-09-10",
     count: 2,
   });
 });
 
+it("accepts one ping per minute from each source", async () => {
+  expect((await post()).status).toBe(201);
+  const repeat = await post();
+  expect(repeat.status).toBe(429);
+  expect(repeat.headers.get("Retry-After")).toBe("60");
+  expect(await repeat.json()).toMatchObject({
+    error: { code: "source_limited", retryAfterMs: expect.any(Number) },
+  });
+  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  expect((await post(input, other)).status).toBe(201);
+  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  expect((await post()).status).toBe(429);
+});
+
+it("rejects a source at 59,999 milliseconds and accepts it at exactly 60,000", () => {
+  const time = Date.parse("2026-09-10T12:00:00Z");
+  const state = {
+    lastAcceptedAt: time,
+    day: "2026-09-10",
+    count: 1,
+    pings: [],
+    sources: { a: time },
+  };
+  expect(decideAcceptance(state, time + 59_999, 10_000, "a")).toMatchObject({
+    code: "source_limited",
+    retryAfterMs: 1,
+  });
+  expect(decideAcceptance(state, time + 60_000, 10_000, "a")).toEqual({
+    day: "2026-09-10",
+    count: 2,
+  });
+  expect(decideAcceptance(state, time + 1000, 10_000, "b")).toEqual({
+    day: "2026-09-10",
+    count: 2,
+  });
+});
+
+it("keeps the source limit after eviction and forgets sources after a minute", async () => {
+  await post();
+  await evictDurableObject(stub());
+  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  expect(await (await post()).json()).toMatchObject({
+    error: { code: "source_limited" },
+  });
+  await runInDurableObject(stub(), async (_instance, state) => {
+    const stored = await state.storage.get<{ sources: Record<string, number> }>(
+      "state",
+    );
+    const [key] = Object.keys(stored!.sources);
+    expect(key).toMatch(/^[0-9a-f]{32}$/);
+    expect(key).not.toContain(address);
+    stored!.sources = {
+      [key]: Date.now() - 60_000,
+      stale: Date.now() - 61_000,
+    };
+    await state.storage.put("state", stored);
+  });
+  await evictDurableObject(stub());
+  expect((await post()).status).toBe(201);
+  await runInDurableObject(stub(), async (_instance, state) => {
+    const stored = await state.storage.get<{ sources: Record<string, number> }>(
+      "state",
+    );
+    expect(Object.keys(stored!.sources)).toHaveLength(1);
+  });
+});
+
+it("shares one source bucket among requests without a client address", async () => {
+  expect((await post(input, "")).status).toBe(201);
+  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  expect(await (await post(input, "")).json()).toMatchObject({
+    error: { code: "source_limited" },
+  });
+  expect((await post(input, other)).status).toBe(201);
+});
+
 it("keeps the one-second limit and daily count after eviction", async () => {
   await post();
   await evictDurableObject(stub());
-  expect((await post()).status).toBe(429);
+  expect(await (await post(input, other)).json()).toMatchObject({
+    error: { code: "rate_limited" },
+  });
   await setState({
     lastAcceptedAt: Date.now() - 2000,
     day: new Date().toISOString().slice(0, 10),
     count: 10_000,
   });
   await evictDurableObject(stub());
-  const limited = await post();
+  const limited = await post(input, other);
   expect(limited.status).toBe(429);
   expect(await limited.json()).toMatchObject({
     error: { code: "daily_limit" },
   });
   await setState({ day: "2000-01-01" });
-  expect((await post()).status).toBe(201);
+  expect((await post(input, other)).status).toBe(201);
 });
 
 it("resets the daily count at midnight while retaining the one-second spacing", () => {
@@ -81,12 +172,13 @@ it("resets the daily count at midnight while retaining the one-second spacing", 
     day: "2026-09-10",
     count: 10_000,
     pings: [],
+    sources: {},
   };
-  expect(decideAcceptance(state, midnight, 10_000)).toMatchObject({
+  expect(decideAcceptance(state, midnight, 10_000, "a")).toMatchObject({
     code: "rate_limited",
     retryAfterMs: 500,
   });
-  expect(decideAcceptance(state, midnight + 500, 10_000)).toEqual({
+  expect(decideAcceptance(state, midnight + 500, 10_000, "a")).toEqual({
     day: "2026-09-11",
     count: 1,
   });

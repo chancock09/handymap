@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import {
   INTERVAL_MS,
   LIFETIME_MS,
+  SOURCE_INTERVAL_MS,
   type Ping,
   type PingInput,
   type MapEvent,
@@ -16,15 +17,52 @@ interface MapState {
   day: string;
   count: number;
   pings: Ping[];
+  sources: Record<string, number>;
+}
+
+export interface Submission {
+  source: string;
+  input: PingInput;
+}
+
+const EMPTY_STATE: MapState = {
+  lastAcceptedAt: null,
+  day: "",
+  count: 0,
+  pings: [],
+  sources: {},
+};
+
+function activeSources(
+  sources: Record<string, number> | undefined,
+  now: number,
+) {
+  return Object.fromEntries(
+    Object.entries(sources ?? {}).filter(
+      ([, acceptedAt]) => now - acceptedAt < SOURCE_INTERVAL_MS,
+    ),
+  );
 }
 
 export function decideAcceptance(
   state: MapState,
   now: number,
   dailyLimit: number,
+  source: string,
 ) {
   const day = new Date(now).toISOString().slice(0, 10);
   const count = state.day === day ? state.count : 0;
+  const sourceAcceptedAt = state.sources?.[source];
+  if (
+    sourceAcceptedAt !== undefined &&
+    now - sourceAcceptedAt < SOURCE_INTERVAL_MS
+  ) {
+    return {
+      code: "source_limited",
+      message: "Each source can add one ping per minute. Try again later.",
+      retryAfterMs: SOURCE_INTERVAL_MS - (now - sourceAcceptedAt),
+    };
+  }
   if (
     state.lastAcceptedAt !== null &&
     now - state.lastAcceptedAt < INTERVAL_MS
@@ -65,19 +103,16 @@ export class MapRoom extends DurableObject<Env> {
   }
 
   private async state() {
-    return (
-      (await this.ctx.storage.get<MapState>("state")) ?? {
-        lastAcceptedAt: null,
-        day: "",
-        count: 0,
-        pings: [],
-      }
-    );
+    return (await this.ctx.storage.get<MapState>("state")) ?? EMPTY_STATE;
   }
 
   async fetch(request: Request): Promise<Response> {
-    if (request.method === "POST")
-      return this.accept(validateInput(await request.json()));
+    if (request.method === "POST") {
+      const { source, input } = (await request.json()) as Submission;
+      if (typeof source !== "string" || !source)
+        return error(400, "invalid_payload", "A source is required.");
+      return this.accept(source, validateInput(input));
+    }
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
       return error(426, "upgrade_required", "Use a WebSocket connection.");
     return this.ctx.blockConcurrencyWhile(async () => {
@@ -147,21 +182,18 @@ export class MapRoom extends DurableObject<Env> {
     }
   }
 
-  private async accept(input: PingInput): Promise<Response> {
+  private async accept(source: string, input: PingInput): Promise<Response> {
     return this.ctx.blockConcurrencyWhile(async () => {
       const outcome = await this.ctx.storage.transaction(
         async (transaction) => {
-          const state = (await transaction.get<MapState>("state")) ?? {
-            lastAcceptedAt: null,
-            day: "",
-            count: 0,
-            pings: [],
-          };
+          const state =
+            (await transaction.get<MapState>("state")) ?? EMPTY_STATE;
           const now = Date.now();
           const decision = decideAcceptance(
             state,
             now,
             limit(this.env.MAX_PINGS_PER_DAY, 10_000),
+            source,
           );
           if ("code" in decision) return { rejection: decision };
           const ping: Ping = {
@@ -179,6 +211,7 @@ export class MapRoom extends DurableObject<Env> {
             day: decision.day,
             count: decision.count,
             pings,
+            sources: { ...activeSources(state.sources, now), [source]: now },
           } satisfies MapState);
           await transaction.setAlarm(pings[0].expiresAt);
           return { ping };
@@ -210,7 +243,9 @@ export class MapRoom extends DurableObject<Env> {
       await this.ctx.storage.transaction(async (transaction) => {
         const state = await transaction.get<MapState>("state");
         if (!state) return;
-        state.pings = state.pings.filter((ping) => ping.expiresAt > Date.now());
+        const now = Date.now();
+        state.pings = state.pings.filter((ping) => ping.expiresAt > now);
+        state.sources = activeSources(state.sources, now);
         await transaction.put("state", state);
         if (state.pings.length)
           await transaction.setAlarm(state.pings[0].expiresAt);
