@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { Ping } from "../../src/protocol";
 
-function ping(id: string, longitude = -50, lifetime = 62_000): Ping {
+function ping(id: string, longitude = -50, lifetime = 60_000): Ping {
   return {
     id,
     latitude: 0,

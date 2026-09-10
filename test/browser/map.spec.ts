@@ -93,7 +93,7 @@ test("expires after the two-second pulse and following minute without a reconnec
     ...payload,
     id: "lifetime",
     createdAt: start,
-    expiresAt: start + 62_000,
+    expiresAt: start + 60_000,
   };
   send!(JSON.stringify({ type: "ping", ping, serverTime: start }));
   await expect(page.locator("#ping-lifetime")).toHaveClass(/pulse/);
@@ -272,7 +272,7 @@ test("reconnects after connection loss and replaces the previous snapshot", asyn
     ...payload,
     id: "reconnect-check",
     createdAt: Date.now(),
-    expiresAt: Date.now() + 62_000,
+    expiresAt: Date.now() + 60_000,
   };
   await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     connections++;

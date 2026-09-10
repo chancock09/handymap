@@ -14,7 +14,7 @@ async function openMap(page: Page) {
             message: "The card stays with the map.",
             id: "fullscreen-check",
             createdAt: Date.now(),
-            expiresAt: Date.now() + 62_000,
+            expiresAt: Date.now() + 60_000,
           },
         ],
       }),
