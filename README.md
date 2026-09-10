@@ -11,6 +11,8 @@ Separate browsers count separately. The site clears the count when its live conn
 Use **Send a ping** to open the form and enter coordinates manually.
 The form keeps your draft when you close it. An accepted ping opens on the map.
 The map fills the available screen. **Live feed** shows active pings in a horizontal ticker at the bottom.
+Each ticker item shows the title and one line of the message, which has a 160-character limit.
+Long previews end with an ellipsis. Select an item to read its full message.
 The feed advances every five seconds when its items extend beyond the screen.
 Use the arrows or swipe to browse. Use **Pause** to stop the feed.
 The feed pauses during hover, keyboard use, and open cards or forms. It starts paused when reduced motion is enabled.
