@@ -17,13 +17,22 @@
       <header class="atlas-header">
         <a class="brand" href="/" aria-label="HandyMap home">HandyMap</a>
         <div class="header-actions">
-          <span
-            id="connection"
-            class="connection"
-            role="status"
-            data-state="connecting"
-            >Connecting</span
-          >
+          <div class="live-status">
+            <span
+              id="presence"
+              class="presence"
+              role="status"
+              aria-atomic="true"
+              >Checking who’s here…</span
+            >
+            <span
+              id="connection"
+              class="connection"
+              role="status"
+              data-state="connecting"
+              >Connecting</span
+            >
+          </div>
           <nav aria-label="Main">
             <a href="/docs">API guide <span aria-hidden="true">↗</span></a>
           </nav>
@@ -39,7 +48,9 @@
       </header>
       <section class="map-scene" aria-labelledby="map-title">
         <div class="map-heading">
-          <h1 id="map-title">click to share an update</h1>
+          <h1 id="map-title">
+            Click anywhere on the map to share a live update with everyone here.
+          </h1>
           <button
             id="fullscreen"
             class="fullscreen-button"

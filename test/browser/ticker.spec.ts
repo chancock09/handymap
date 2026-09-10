@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function openFeed(page: Page, count = 7) {
-  await page.routeWebSocket("**/ws", (socket) => {
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     const time = Date.now();
     socket.send(
       JSON.stringify({

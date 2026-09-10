@@ -94,17 +94,57 @@ export class MapRoom extends DurableObject<Env> {
       }
       const state = await this.state();
       server.serializeAttachment(ACCESS_GENERATION);
-      this.ctx.acceptWebSocket(server);
+      const viewer = new URL(request.url).searchParams.get("viewer") ?? "";
+      this.ctx.acceptWebSocket(server, [
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          viewer,
+        )
+          ? viewer.toLowerCase()
+          : crypto.randomUUID(),
+      ]);
       const now = Date.now();
       server.send(
         JSON.stringify({
           type: "snapshot",
           pings: state.pings.filter((ping) => ping.expiresAt > now),
           serverTime: now,
+          viewers: this.viewerCount(),
         } satisfies MapEvent),
       );
+      this.broadcastPresence(server);
       return new Response(null, { status: 101, webSocket: client });
     });
+  }
+
+  private liveSockets(exclude?: WebSocket) {
+    return this.ctx
+      .getWebSockets()
+      .filter(
+        (socket) => socket !== exclude && socket.readyState === WebSocket.OPEN,
+      );
+  }
+
+  private viewerCount(exclude?: WebSocket) {
+    return new Set(
+      this.liveSockets(exclude).map(
+        (socket) => this.ctx.getTags(socket)[0] ?? socket,
+      ),
+    ).size;
+  }
+
+  private broadcastPresence(skip?: WebSocket, disconnected?: WebSocket) {
+    const message = JSON.stringify({
+      type: "presence",
+      viewers: this.viewerCount(disconnected),
+      serverTime: Date.now(),
+    } satisfies MapEvent);
+    for (const socket of this.liveSockets(skip)) {
+      try {
+        socket.send(message);
+      } catch {
+        socket.close(1011, "connection_failed");
+      }
+    }
   }
 
   private async accept(input: PingInput): Promise<Response> {
@@ -180,13 +220,16 @@ export class MapRoom extends DurableObject<Env> {
 
   webSocketMessage(socket: WebSocket) {
     socket.close(1008, "Use POST /api/pings to submit a ping.");
+    this.broadcastPresence(socket, socket);
   }
 
   webSocketClose(socket: WebSocket) {
     socket.close(1000);
+    this.broadcastPresence(socket, socket);
   }
 
   webSocketError(socket: WebSocket) {
     socket.close(1011, "connection_failed");
+    this.broadcastPresence(socket, socket);
   }
 }

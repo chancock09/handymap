@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("uses Equal Earth for high latitude pings and map selections", async ({
   page,
 }) => {
-  await page.routeWebSocket("**/ws", (socket) => {
+  await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     const time = Date.now();
     socket.send(
       JSON.stringify({
