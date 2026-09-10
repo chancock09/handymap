@@ -17,12 +17,14 @@ afterEach(async () => {
   for (const client of clients.splice(0)) client.close();
   await reset();
 });
-export async function post(payload: unknown = input) {
+export const address = "203.0.113.10";
+export async function post(payload: unknown = input, source = address) {
   const response = await SELF.fetch("https://handymap.test/api/pings", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Origin: "https://another.test",
+      ...(source ? { "CF-Connecting-IP": source } : {}),
     },
     body: JSON.stringify(payload),
   });
@@ -32,7 +34,7 @@ export async function setState(update: Record<string, unknown>) {
   await runInDurableObject(stub(), async (_instance, state) => {
     const existing = (await state.storage.get<Record<string, unknown>>(
       "state",
-    )) ?? { lastAcceptedAt: null, day: "", count: 0, pings: [] };
+    )) ?? { lastAcceptedAt: null, day: "", count: 0, pings: [], sources: {} };
     await state.storage.put("state", { ...existing, ...update });
   });
 }

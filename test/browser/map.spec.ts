@@ -6,9 +6,20 @@ const payload = {
   title: "Browser check",
   message: "A shared signal.",
 };
+// The room accepts one ping per source address per minute, so each real submission uses a fresh address.
+let sources = 0;
+const freshSource = () => ({ "CF-Connecting-IP": `203.0.113.${++sources}` });
+function submitFromFreshSource(page: Page) {
+  return page.route("**/api/pings", (route) =>
+    route.continue({
+      headers: { ...route.request().headers(), ...freshSource() },
+    }),
+  );
+}
 async function submit(page: Page, data = payload) {
+  const headers = freshSource();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await page.request.post("/api/pings", { data });
+    const response = await page.request.post("/api/pings", { data, headers });
     if (response.status() === 201) return response.json();
     expect(response.status()).toBe(429);
     await new Promise((resolve) => setTimeout(resolve, 1050));
@@ -43,6 +54,7 @@ test("shows the same real ping in two browsers and a fresh page", async ({
 });
 
 test("submits through the form and keeps text inert", async ({ page }) => {
+  await submitFromFreshSource(page);
   await page.goto("/");
   await page.locator("#open-composer").click();
   await page.getByLabel("Latitude", { exact: true }).fill("0");
@@ -240,6 +252,7 @@ test("supports touch, screen bounds, map selection, and reduced motion", async (
 test("serves the API guide and runs its JavaScript example against the service", async ({
   page,
 }) => {
+  await submitFromFreshSource(page);
   await page.goto("/docs");
   await expect(
     page.getByRole("heading", { name: "Send your first ping" }),

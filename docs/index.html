@@ -133,7 +133,8 @@
         <h2 id="limits">One world. One shared limit.</h2>
         <p>
           The map accepts one ping every 1,000 milliseconds across
-          <strong>all callers</strong>. It rejects every extra request
+          <strong>all callers</strong>, and one ping per minute from
+          <strong>each source address</strong>. It rejects every extra request
           immediately. There is no queue or automatic retry.
         </p>
         <p>
@@ -158,9 +159,11 @@ Retry-After: 1
           retry count.
         </p>
         <p>
-          For <code>daily_limit</code>, <code>Retry-After</code> points to
-          midnight UTC. A network failure does not prove rejection: the server
-          can accept a ping before the response reaches you.
+          For <code>source_limited</code>, <code>Retry-After</code> counts down
+          the minute since your last accepted ping. For
+          <code>daily_limit</code>, <code>Retry-After</code> points to midnight
+          UTC. A network failure does not prove rejection: the server can accept
+          a ping before the response reaches you.
         </p>
         <div class="table-wrap">
           <table>
@@ -193,7 +196,7 @@ Retry-After: 1
               </tr>
               <tr>
                 <td><code>429</code></td>
-                <td>One-second or daily limit</td>
+                <td>One-second, one-minute, or daily limit</td>
               </tr>
               <tr>
                 <td><code>503</code></td>

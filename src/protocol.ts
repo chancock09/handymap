@@ -2,6 +2,7 @@ export const PULSE_MS = 2_000;
 export const DOT_MS = 60_000;
 export const LIFETIME_MS = PULSE_MS + DOT_MS;
 export const INTERVAL_MS = 1_000;
+export const SOURCE_INTERVAL_MS = 60_000;
 export const BODY_LIMIT = 4_096;
 
 export interface PingInput {

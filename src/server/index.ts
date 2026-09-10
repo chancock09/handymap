@@ -1,6 +1,18 @@
 import { cors, error, readInput, RequestError } from "./http";
-import type { MapRoom } from "./room";
+import type { MapRoom, Submission } from "./room";
 export { MapRoom } from "./room";
+
+// Pings are keyed by a hash of the client address so the room never stores raw IPs.
+async function sourceOf(request: Request) {
+  const address = request.headers.get("CF-Connecting-IP") ?? "";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(address),
+  );
+  return [...new Uint8Array(digest).slice(0, 16)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 export interface Env {
   MAP: DurableObjectNamespace<MapRoom>;
@@ -31,10 +43,13 @@ export default {
           response.headers.set("Allow", "POST, OPTIONS");
           return cors(response);
         }
-        const input = await readInput(request);
+        const submission: Submission = {
+          source: await sourceOf(request),
+          input: await readInput(request),
+        };
         const response = await env.MAP.getByName("world").fetch(
           "https://map/pings",
-          { method: "POST", body: JSON.stringify(input) },
+          { method: "POST", body: JSON.stringify(submission) },
         );
         console.log(
           JSON.stringify({ event: "submission", status: response.status }),
