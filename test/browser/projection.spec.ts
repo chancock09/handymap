@@ -17,7 +17,7 @@ test("uses Equal Earth for high latitude pings and map selections", async ({
             title: "Northern signal",
             message: "Check the map projection.",
             createdAt: time,
-            expiresAt: time + 62_000,
+            expiresAt: time + 60_000,
           },
         ],
       }),

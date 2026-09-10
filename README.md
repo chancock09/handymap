@@ -46,7 +46,7 @@ curl http://localhost:8787/api/pings \
 ```
 
 The API returns `201` with the accepted payload, ID, and Unix timestamps in milliseconds.
-`expiresAt` is 62 seconds after `createdAt`.
+`expiresAt` is 60 seconds after `createdAt`.
 The browser form uses the same endpoint and limits.
 
 | Field       | Requirement                                                       |

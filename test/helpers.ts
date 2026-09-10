@@ -105,6 +105,6 @@ export function pingAt(createdAt: number): Ping {
     ...input,
     id: crypto.randomUUID(),
     createdAt,
-    expiresAt: createdAt + 62_000,
+    expiresAt: createdAt + 60_000,
   };
 }

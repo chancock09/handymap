@@ -14,7 +14,7 @@ async function openFeed(page: Page, count = 7, message = "A little hello.") {
           title: `Signal ${index + 1}`,
           message,
           createdAt: time,
-          expiresAt: time + 62_000,
+          expiresAt: time + 60_000,
         })),
       }),
     );
@@ -148,7 +148,7 @@ test("removes expired feed items and hides controls when the feed is empty", asy
   await page.clock.install();
   await openFeed(page);
   await page.locator("#pause-feed").click();
-  await page.clock.fastForward(62_000);
+  await page.clock.fastForward(60_000);
   await expect(page.locator(".ping-row")).toHaveCount(0);
   await expect(page.locator("#ticker-controls")).toBeHidden();
   await expect(page.locator("#activity-title")).toBeFocused();

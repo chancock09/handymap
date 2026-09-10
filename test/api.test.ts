@@ -29,7 +29,7 @@ it("accepts zero coordinates, trims text, and returns a fixed lifetime with publ
     imageUrl: "https://example.com/ping.png",
   });
   expect(ping.id).toMatch(/^[a-f0-9-]{36}$/);
-  expect(ping.expiresAt - ping.createdAt).toBe(62_000);
+  expect(ping.expiresAt - ping.createdAt).toBe(60_000);
 });
 
 it("accepts exactly one request from a simultaneous burst of distinct sources", async () => {
