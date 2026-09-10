@@ -1,0 +1,163 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.map-panel .compose-entry {
+  width: auto;
+  margin: 0;
+  gap: 20px;
+  padding: 12px 18px;
+}
+.secondary-button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.secondary-button:hover {
+  border-color: var(--accent);
+}
+.location-methods {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+}
+.map-feedback {
+  margin: 8px 24px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #1d2e25;
+  font-size: 13px;
+}
+.map-feedback p {
+  margin: 0;
+  line-height: 1.5;
+}
+.map-feedback .text-button {
+  color: var(--accent);
+}
+.map-feedback button:disabled {
+  color: var(--muted);
+}
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.field-count {
+  color: var(--muted);
+  font: 12px var(--mono);
+}
+.field-error {
+  color: #f4b6a0;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 6px 0 0;
+}
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: #f4b6a0;
+}
+#image-options {
+  margin-top: 12px;
+  font-size: 13px;
+}
+#image-options summary {
+  padding: 12px 0;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--muted);
+}
+#image-options summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.composer-dialog {
+  position: fixed;
+  inset: auto 0 var(--keyboard-offset, 0px);
+  margin: 0 auto;
+  padding: 0;
+  width: min(100%, 460px);
+  max-width: 100%;
+  max-height: min(100dvh - 16px, var(--available-height, 100dvh) - 16px);
+  border: 1px solid var(--line);
+  border-radius: 16px 16px 0 0;
+  background: var(--panel);
+  color: var(--text);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.composer-dialog::backdrop {
+  background: #07120db3;
+}
+.composer-dialog .send-panel {
+  border: 0;
+  padding: 24px 24px max(24px, env(safe-area-inset-bottom));
+}
+.composer-dialog .send-panel h2 {
+  padding-right: 24px;
+}
+.composer-dialog .send-actions {
+  padding: 8px 0 16px;
+  background: #17211f;
+}
+body.composer-open {
+  overflow: hidden;
+}
+.cluster {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  background: #263e2a;
+  color: var(--accent);
+  font: 600 14px var(--mono);
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 2;
+}
+.dot.is-selected,
+.cluster.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (min-width: 721px) {
+  .composer-dialog {
+    inset: 0;
+    margin: auto;
+    border-radius: 14px;
+  }
+}
+@media (max-width: 720px) {
+  .map-panel .ping-card {
+    top: auto !important;
+    bottom: 12px;
+    left: 12px !important;
+    width: calc(100% - 24px);
+    max-height: 55dvh;
+    border-radius: 14px;
+  }
+  .map-panel .compose-entry {
+    font-size: 13px;
+    gap: 14px;
+    padding: 10px 14px;
+  }
+}
