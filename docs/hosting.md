@@ -126,7 +126,7 @@ Do not change the shared wildcard or the bypass destinations for other sites.
 ## Deployment record — 2026-09-10
 
 The site is public at `https://handymap.gobbi.tech`.
-The current Worker version is `c6036c6f-238e-484e-9159-10eefaadb763`.
+The current Worker version is `6d46b9db-372b-41d8-882b-221ffdf6c3bd`.
 The deployment uses the existing account and does not change its billing plan.
 The available API tokens cannot read billing subscriptions; the infrastructure runbook records Workers Free.
 
