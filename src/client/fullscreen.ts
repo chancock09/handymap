@@ -3,20 +3,10 @@ export function setupFullscreen(placeCard: () => void) {
   const stage = document.getElementById("map-stage")!;
   const map = document.getElementById("map")!;
   const button = document.getElementById("fullscreen") as HTMLButtonElement;
-  const outside = [
-    ...document.querySelectorAll<HTMLElement>(
-      "body > header, body > footer, .intro, .api-strip, .send-panel",
-    ),
-  ].map((element) => ({ element, inert: element.inert }));
   let expanded = false;
 
-  // Native full screen only displays descendants of the selected element.
-  panel.append(document.getElementById("ping-card")!);
-
   function fitMap() {
-    map.style.width = expanded
-      ? `${Math.min(stage.clientWidth, (stage.clientHeight * 1000) / 560)}px`
-      : "";
+    map.style.width = `${Math.min(stage.clientWidth, (stage.clientHeight * 1000) / 560)}px`;
     placeCard();
   }
 
@@ -26,7 +16,6 @@ export function setupFullscreen(placeCard: () => void) {
     document.body.classList.toggle("map-expanded", active);
     button.textContent = active ? "Exit full screen" : "Full screen";
     button.setAttribute("aria-pressed", String(active));
-    for (const item of outside) item.element.inert = active || item.inert;
     fitMap();
     button.focus({ preventScroll: true });
   }
@@ -65,4 +54,5 @@ export function setupFullscreen(placeCard: () => void) {
     if (event.key === "Escape" && expanded && !button.disabled) void toggle();
   });
   new ResizeObserver(fitMap).observe(stage);
+  window.addEventListener("resize", fitMap);
 }

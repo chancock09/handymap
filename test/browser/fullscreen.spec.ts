@@ -25,6 +25,13 @@ async function openMap(page: Page) {
 }
 
 async function expectMapFits(page: Page) {
+  await expect
+    .poll(async () => {
+      const stage = await page.locator("#map-stage").boundingBox();
+      const map = await page.locator("#map").boundingBox();
+      return map!.width <= stage!.width + 1 && map!.height <= stage!.height + 1;
+    })
+    .toBe(true);
   const stage = await page.locator("#map-stage").boundingBox();
   const map = await page.locator("#map").boundingBox();
   const dot = await page.locator("#ping-fullscreen-check").boundingBox();
@@ -62,10 +69,8 @@ test("opens native full screen with working cards and exits from its button", as
   await expect(
     page.getByRole("button", { name: "Full screen", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");
-  await expect(page.locator("#title")).toBeEditable();
-  expect(await page.locator(".send-panel").evaluate((node) => node.inert)).toBe(
-    false,
-  );
+  await page.locator("#open-composer").click();
+  await expect(page.locator("#latitude")).toBeEditable();
 });
 
 test("restores the page after Escape and a browser full-screen exit", async ({
@@ -110,9 +115,6 @@ for (const unsupported of [true, false]) {
     expect(await page.evaluate(() => document.fullscreenElement)).toBeNull();
     const panel = await page.locator("#map-panel").boundingBox();
     expect(panel).toEqual({ x: 0, y: 0, width: 390, height: 844 });
-    expect(
-      await page.locator(".send-panel").evaluate((node) => node.inert),
-    ).toBe(true);
     await expectMapFits(page);
     await page.setViewportSize({ width: 844, height: 390 });
     await expect
@@ -128,8 +130,5 @@ for (const unsupported of [true, false]) {
       "aria-pressed",
       "false",
     );
-    expect(
-      await page.locator(".send-panel").evaluate((node) => node.inert),
-    ).toBe(false);
   });
 }

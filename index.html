@@ -12,111 +12,184 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script type="module" src="/src/client/map.ts"></script>
   </head>
-  <body>
-    <header class="site-header shell">
-      <a class="brand" href="/" aria-label="HandyMap home"
-        ><span class="brand-icon" aria-hidden="true">✳</span> HandyMap<span
-          class="brand-label"
-          >A SHARED LITTLE WORLD</span
-        ></a
-      >
-      <nav aria-label="Main">
-        <a href="/docs">API guide <span aria-hidden="true">↗</span></a>
-      </nav>
-    </header>
-    <main class="shell">
-      <section class="intro">
-        <div>
-          <p class="eyebrow">A SHARED EXPERIMENT IN SAYING HELLO</p>
-          <h1>
-            One world.<br />One ping at a time<span class="accent">.</span>
-          </h1>
+  <body class="atlas-page">
+    <main id="map-panel" class="map-panel" aria-label="Live world map">
+      <header class="atlas-header">
+        <a class="brand" href="/" aria-label="HandyMap home">HandyMap</a>
+        <div class="header-actions">
+          <span
+            id="connection"
+            class="connection"
+            role="status"
+            data-state="connecting"
+            >Connecting</span
+          >
+          <nav aria-label="Main">
+            <a href="/docs">API guide <span aria-hidden="true">↗</span></a>
+          </nav>
+          <button
+            id="open-composer"
+            class="primary-button compose-entry"
+            type="button"
+            aria-haspopup="dialog"
+          >
+            Send a ping <span aria-hidden="true">↗</span>
+          </button>
         </div>
-        <p class="intro-copy">
-          A launch. A little victory. A hello from somewhere.<br />Send a signal
-          and share a moment with other viewers.
-        </p>
-      </section>
-      <div class="workspace">
-        <section id="map-panel" class="map-panel" aria-label="Live world map">
-          <div class="map-toolbar">
-            <span class="eyebrow">THE WORLD, RIGHT NOW</span>
-            <div class="map-controls">
-              <span
-                id="connection"
-                class="connection"
-                role="status"
-                data-state="connecting"
-                >Connecting</span
-              >
-              <button
-                id="fullscreen"
-                class="fullscreen-button"
-                type="button"
-                aria-controls="map-panel"
-                aria-pressed="false"
-              >
-                Full screen
-              </button>
-            </div>
-          </div>
-          <div id="map-stage" class="map-stage">
-            <div id="map" class="world-map">
-              <svg
-                id="world"
-                viewBox="0 0 1000 560"
-                aria-label="World map. Choose coordinates with the form or select a point on the map."
-                role="img"
-              ></svg>
-              <div id="dots" class="dots"></div>
-              <span
-                id="selection"
-                class="selection"
-                hidden
-                aria-hidden="true"
-              ></span>
-            </div>
-          </div>
-          <div class="map-bottom">
+      </header>
+      <section class="map-scene" aria-labelledby="map-title">
+        <div class="map-heading">
+          <h1 id="map-title">click to share an update</h1>
+          <button
+            id="fullscreen"
+            class="fullscreen-button"
+            type="button"
+            aria-controls="map-panel"
+            aria-pressed="false"
+          >
+            Full screen
+          </button>
+        </div>
+        <div id="map-stage" class="map-stage">
+          <div id="map" class="world-map">
+            <svg
+              id="world"
+              viewBox="0 0 1000 560"
+              aria-label="World map in Equal Earth projection. Choose coordinates with the form or select a point on the map."
+              role="img"
+            ></svg>
+            <div id="dots" class="dots"></div>
             <span
-              ><strong id="count">0</strong>
-              <span id="count-label">active pings</span></span
-            ><span class="map-hint">Pick a spot. Leave a little hello.</span>
+              id="selection"
+              class="selection"
+              hidden
+              aria-hidden="true"
+            ></span>
           </div>
+        </div>
+        <div class="map-notices">
           <div id="connection-notice" class="connection-notice" hidden>
             <p id="connection-message"></p>
             <button id="reconnect" class="text-button" type="button">
               Reconnect
             </button>
           </div>
-          <div class="map-caption">
-            <span class="tiny-cross" aria-hidden="true">+</span
-            ><span id="empty-message"
-              >The world is quiet. Be the first to send a ping.</span
-            ><span class="map-credit"
-              >Map:
-              <a href="https://www.naturalearthdata.com/"
-                >Natural Earth</a
-              ></span
+          <div id="map-feedback" class="map-feedback" hidden>
+            <p id="map-status" role="status"></p>
+            <button id="view-ping" class="text-button" type="button" hidden>
+              View your ping
+            </button>
+          </div>
+        </div>
+        <p class="map-credit">
+          Equal Earth · Map data:
+          <a href="https://www.naturalearthdata.com/">Natural Earth</a>
+        </p>
+      </section>
+      <section class="activity" aria-labelledby="activity-title">
+        <div class="activity-header">
+          <div class="feed-heading">
+            <h2 id="activity-title" tabindex="-1">Live feed</h2>
+            <span class="feed-count"
+              ><strong id="count">0</strong>
+              <span id="count-label">active pings</span></span
             >
           </div>
-        </section>
+          <div class="feed-actions">
+            <button
+              id="show-all-pings"
+              class="text-button"
+              type="button"
+              hidden
+            >
+              Show all
+            </button>
+            <div
+              id="ticker-controls"
+              class="ticker-controls"
+              aria-label="Feed controls"
+              hidden
+            >
+              <button
+                id="previous-ping"
+                class="ticker-button"
+                type="button"
+                aria-label="Previous pings"
+                aria-controls="ping-list"
+              >
+                ←
+              </button>
+              <button
+                id="pause-feed"
+                class="ticker-button pause-feed"
+                type="button"
+                aria-label="Pause feed"
+                aria-pressed="false"
+                aria-controls="ping-list"
+              >
+                Pause
+              </button>
+              <button
+                id="next-ping"
+                class="ticker-button"
+                type="button"
+                aria-label="Next pings"
+                aria-controls="ping-list"
+              >
+                →
+              </button>
+            </div>
+          </div>
+        </div>
+        <p id="activity-empty" class="field-help">
+          Waiting for a live connection.
+        </p>
+        <p id="activity-filter" class="field-help" hidden></p>
+        <ul id="ping-list" class="ping-list" aria-label="Active pings"></ul>
+      </section>
+      <p id="activity-status" class="sr-only" role="status"></p>
+      <dialog
+        id="composer-dialog"
+        class="composer-dialog"
+        aria-labelledby="send-title"
+      >
         <aside class="send-panel" aria-labelledby="send-title">
+          <button
+            id="close-composer"
+            class="close-button"
+            type="button"
+            aria-label="Close composer"
+          >
+            ×
+          </button>
           <p class="eyebrow">YOUR TURN</p>
           <h2 id="send-title">
             Send a little signal<span class="accent">↗</span>
           </h2>
-          <p class="muted">
-            Use the <a href="/docs">API</a>, or try it here. Every ping shares
-            the same one-second limit.
-          </p>
-          <form id="ping-form">
-            <fieldset>
+          <p class="muted composer-intro">Pick a place. Give it a story.</p>
+          <form id="ping-form" novalidate>
+            <fieldset id="location-step">
               <legend>01 <span>Choose a location</span></legend>
-              <p class="field-help">Select the map or enter coordinates.</p>
+              <div class="location-methods">
+                <button
+                  id="pick-location"
+                  class="secondary-button"
+                  type="button"
+                >
+                  Pick on map
+                </button>
+                <button
+                  id="enter-coordinates"
+                  class="text-button"
+                  type="button"
+                >
+                  Enter coordinates
+                </button>
+              </div>
               <div class="coordinate-fields">
-                <label
-                  >Latitude<input
+                <div>
+                  <label for="latitude">Latitude</label>
+                  <input
                     id="latitude"
                     name="latitude"
                     type="number"
@@ -125,9 +198,13 @@
                     step="any"
                     placeholder="37.7749"
                     required
-                /></label>
-                <label
-                  >Longitude<input
+                    aria-describedby="latitude-error"
+                  />
+                  <p id="latitude-error" class="field-error" hidden></p>
+                </div>
+                <div>
+                  <label for="longitude">Longitude</label>
+                  <input
                     id="longitude"
                     name="longitude"
                     type="number"
@@ -136,97 +213,113 @@
                     step="any"
                     placeholder="-122.4194"
                     required
-                /></label>
+                    aria-describedby="longitude-error"
+                  />
+                  <p id="longitude-error" class="field-error" hidden></p>
+                </div>
               </div>
+              <button
+                id="continue-story"
+                class="primary-button modal-only"
+                type="button"
+              >
+                Continue to story <span aria-hidden="true">→</span>
+              </button>
             </fieldset>
-            <fieldset>
+            <fieldset id="story-step">
               <legend>02 <span>Give it a story</span></legend>
-              <label
-                >Title<input
-                  name="title"
-                  id="title"
-                  placeholder="Hello from San Francisco"
-                  required
-              /></label>
-              <label
-                >A short sentence<textarea
-                  name="message"
-                  id="message"
-                  rows="2"
-                  placeholder="We just shipped our first project."
-                  required
-                ></textarea>
-              </label>
-              <label
-                >Small image URL <span class="optional">optional</span
-                ><input
+              <button
+                id="change-location"
+                class="text-button modal-only"
+                type="button"
+              >
+                Change location
+              </button>
+              <div class="label-row">
+                <label for="title">Title</label
+                ><span id="title-count" class="field-count">0 / 80</span>
+              </div>
+              <input
+                name="title"
+                id="title"
+                placeholder="Hello from San Francisco"
+                required
+                aria-describedby="title-count title-error"
+              />
+              <p id="title-error" class="field-error" hidden></p>
+              <div class="label-row">
+                <label for="message">A short sentence</label
+                ><span id="message-count" class="field-count">0 / 160</span>
+              </div>
+              <textarea
+                name="message"
+                id="message"
+                rows="2"
+                placeholder="We just shipped our first project."
+                required
+                aria-describedby="message-count message-error"
+              ></textarea>
+              <p id="message-error" class="field-error" hidden></p>
+              <details id="image-options">
+                <summary>
+                  Add an image <span class="optional">optional</span>
+                </summary>
+                <label for="imageUrl">Small image URL</label>
+                <input
                   name="imageUrl"
                   id="imageUrl"
                   type="url"
                   maxlength="2048"
                   placeholder="https://…"
-                  aria-describedby="image-help"
-              /></label>
-              <p class="field-help" id="image-help">
-                Use a small, publicly hosted HTTPS image.
-              </p>
+                  aria-describedby="image-help imageUrl-error"
+                />
+                <p class="field-help" id="image-help">
+                  Use a small, publicly hosted HTTPS image.
+                </p>
+                <p id="imageUrl-error" class="field-error" hidden></p>
+              </details>
+              <div class="send-actions">
+                <p class="privacy-note">
+                  Everyone with access can see your ping for 62 seconds.
+                </p>
+                <button id="send" class="primary-button" type="submit">
+                  Send ping <span aria-hidden="true">↗</span>
+                </button>
+                <p
+                  id="form-status"
+                  class="form-status"
+                  role="status"
+                  aria-live="polite"
+                ></p>
+                <p id="retry-countdown" class="field-help" hidden></p>
+              </div>
             </fieldset>
-            <button id="send" class="primary-button" type="submit">
-              Send ping <span aria-hidden="true">↗</span>
-            </button>
-            <p
-              id="form-status"
-              class="form-status"
-              role="status"
-              aria-live="polite"
-            ></p>
-            <p class="privacy-note">
-              Everyone with access can see your ping. A two-second pulse, then a
-              dot for one minute.
-            </p>
           </form>
         </aside>
-      </div>
-      <section class="api-strip" aria-labelledby="api-title">
-        <div>
-          <p class="eyebrow">MADE FOR YOUR NEXT LITTLE THING</p>
-          <h2 id="api-title">Your project can say hello, too.</h2>
-          <p class="muted">
-            One JSON request. This site requires Cloudflare Access.
-          </p>
-        </div>
-        <a class="endpoint" href="/docs"
-          ><span>POST</span><code>/api/pings</code
-          ><span aria-hidden="true">↗</span></a
+      </dialog>
+      <section
+        id="ping-card"
+        class="ping-card"
+        aria-labelledby="card-title"
+        tabindex="-1"
+        hidden
+      >
+        <button
+          id="close-card"
+          class="close-button"
+          type="button"
+          aria-label="Close ping card"
         >
+          ×
+        </button>
+        <div id="card-picture" class="card-picture">
+          <span aria-hidden="true">✳</span>
+        </div>
+        <p class="eyebrow" id="card-location"></p>
+        <h2 id="card-title"></h2>
+        <p id="card-message"></p>
+        <p id="card-time" class="field-help"></p>
       </section>
     </main>
-    <footer class="site-footer shell">
-      <span>Small signals. Shared space.</span
-      ><span>Private access. Temporary signals.</span>
-    </footer>
-    <section
-      id="ping-card"
-      class="ping-card"
-      aria-labelledby="card-title"
-      tabindex="-1"
-      hidden
-    >
-      <button
-        id="close-card"
-        class="close-button"
-        type="button"
-        aria-label="Close ping card"
-      >
-        ×
-      </button>
-      <div id="card-picture" class="card-picture">
-        <span aria-hidden="true">✳</span>
-      </div>
-      <p class="eyebrow" id="card-location"></p>
-      <h2 id="card-title"></h2>
-      <p id="card-message"></p>
-      <p id="card-time" class="field-help"></p>
-    </section>
   </body>
 </html>

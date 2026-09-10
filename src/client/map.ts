@@ -1,20 +1,21 @@
 import "./style.css";
 import { setupFullscreen } from "./fullscreen";
-import { geoNaturalEarth1, geoPath, geoGraticule10 } from "d3-geo";
+import { setupComposer } from "./composer";
+import { coordinates, setupActivity } from "./activity";
+import { geoEqualEarth, geoPath, geoGraticule10 } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import world from "world-atlas/countries-110m.json";
-import { PULSE_MS, type Ping, type MapEvent, type ApiError } from "../protocol";
+import { PULSE_MS, type Ping, type MapEvent } from "../protocol";
 
 const element = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const svg = document.getElementById("world") as unknown as SVGSVGElement;
 const dots = element("dots");
 const card = element("ping-card");
-const form = element<HTMLFormElement>("ping-form");
 const latitude = element<HTMLInputElement>("latitude");
 const longitude = element<HTMLInputElement>("longitude");
-const projection = geoNaturalEarth1().fitExtent(
+const projection = geoEqualEarth().fitExtent(
   [
     [20, 15],
     [980, 545],
@@ -41,6 +42,18 @@ let serverOffset = 0;
 let activeCard: string | null = null;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
 const now = () => Date.now() + serverOffset;
+let cardSource: HTMLElement | null = null;
+let cardPinned = false;
+let acceptedPing: Ping | null = null;
+const activity = setupActivity(
+  pings,
+  now,
+  (ping, source) => {
+    showCard(ping, source, true);
+    card.focus({ preventScroll: true });
+  },
+  () => closeCard(),
+);
 
 function position(node: HTMLElement, point: [number, number]) {
   const projected = projection(point);
@@ -50,15 +63,25 @@ function position(node: HTMLElement, point: [number, number]) {
 }
 
 function closeCard(returnFocus = false) {
-  if (returnFocus && activeCard)
-    document.getElementById(`ping-${activeCard}`)?.focus();
+  clearTimeout(closeTimer);
+  if (returnFocus) {
+    const source =
+      cardSource?.isConnected &&
+      cardSource.getClientRects().length > 0 &&
+      !cardSource.matches(":disabled")
+        ? cardSource
+        : element("activity-title");
+    source.focus({ preventScroll: true });
+  }
   card.hidden = true;
   activeCard = null;
+  cardPinned = false;
+  activity.select(null);
 }
 
 function placeCard() {
   if (!activeCard || card.hidden) return;
-  const dot = document.getElementById(`ping-${activeCard}`);
+  const dot = activity.anchor(activeCard);
   if (!dot) return closeCard();
   const bounds = dot.getBoundingClientRect();
   const width = card.offsetWidth;
@@ -88,15 +111,21 @@ function placeCard() {
   card.style.top = `${clamp(top, window.innerHeight - height)}px`;
 }
 
-function showCard(ping: Ping) {
+function showCard(
+  ping: Ping,
+  source = document.getElementById(`ping-${ping.id}`)!,
+  pinned = false,
+) {
   if (ping.expiresAt <= now()) return;
   clearTimeout(closeTimer);
+  cardSource = source;
+  cardPinned = pinned;
+  activity.select(ping.id);
   if (activeCard === ping.id && !card.hidden) return;
   activeCard = ping.id;
   element("card-title").textContent = ping.title;
   element("card-message").textContent = ping.message;
-  element("card-location").textContent =
-    `${Math.abs(ping.latitude).toFixed(2)}° ${ping.latitude < 0 ? "S" : "N"} / ${Math.abs(ping.longitude).toFixed(2)}° ${ping.longitude < 0 ? "W" : "E"}`;
+  element("card-location").textContent = coordinates(ping);
   const picture = element("card-picture");
   const placeholder = document.createElement("span");
   placeholder.textContent = "✳";
@@ -127,7 +156,11 @@ function showCard(ping: Ping) {
 function scheduleClose() {
   clearTimeout(closeTimer);
   closeTimer = setTimeout(() => {
-    if (!card.matches(":hover") && !card.contains(document.activeElement))
+    if (
+      !cardPinned &&
+      !card.matches(":hover") &&
+      !card.contains(document.activeElement)
+    )
       closeCard();
   }, 180);
 }
@@ -137,18 +170,17 @@ card.addEventListener("mouseleave", scheduleClose);
 card.addEventListener("focusout", scheduleClose);
 element("close-card").addEventListener("click", () => closeCard(true));
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeCard(true);
+  if (event.key === "Escape" && !card.hidden) closeCard(true);
 });
 document.addEventListener("pointerdown", (event) => {
   if (
     !card.contains(event.target as Node) &&
-    !(event.target as Element).closest(".dot")
+    !(event.target as Element).closest(".dot, .cluster, .ping-row, #view-ping")
   )
     closeCard();
 });
 window.addEventListener("resize", placeCard);
 window.addEventListener("scroll", placeCard, { passive: true });
-setupFullscreen(placeCard);
 
 function addPing(ping: Ping, animate: boolean) {
   if (ping.expiresAt <= now() || pings.has(ping.id)) return;
@@ -173,10 +205,11 @@ function addPing(ping: Ping, animate: boolean) {
   dot.addEventListener("focus", () => showCard(ping));
   dot.addEventListener("blur", scheduleClose);
   dot.addEventListener("click", () => {
-    showCard(ping);
+    showCard(ping, dot, true);
     card.focus({ preventScroll: true });
   });
   dots.append(dot);
+  activity.add(ping);
   updateCount();
 }
 
@@ -184,9 +217,11 @@ function updateCount() {
   element("count").textContent = String(pings.size);
   element("count-label").textContent =
     pings.size === 1 ? "active ping" : "active pings";
-  element("empty-message").textContent = pings.size
-    ? "A small moment, somewhere in the world. Hover or tap a dot."
-    : "The world is quiet. Be the first to send a ping.";
+  const live = element("connection").dataset.state === "live";
+  element("activity-empty").hidden = pings.size > 0;
+  element("activity-empty").textContent = live
+    ? "No active pings. Pick a spot to send the first one."
+    : "Waiting for a live connection.";
 }
 
 function updateCardTime() {
@@ -198,14 +233,33 @@ function updateCardTime() {
 }
 
 setInterval(() => {
+  let changed = false;
   for (const [id, ping] of pings) {
     if (ping.expiresAt > now()) continue;
-    if (activeCard === id) closeCard();
-    document.getElementById(`ping-${id}`)?.remove();
+    if (activeCard === id) {
+      element("activity-status").textContent = "The open ping has expired.";
+      closeCard(card.contains(document.activeElement));
+    }
+    const dot = document.getElementById(`ping-${id}`);
+    if (dot === document.activeElement)
+      element("activity-title").focus({ preventScroll: true });
+    dot?.remove();
     pings.delete(id);
+    activity.remove(id);
+    changed = true;
+  }
+  if (changed) activity.refreshGroups();
+  if (acceptedPing && acceptedPing.expiresAt <= now()) {
+    acceptedPing = null;
+    if (document.activeElement === element("view-ping"))
+      element("activity-title").focus({ preventScroll: true });
+    element<HTMLButtonElement>("view-ping").disabled = true;
+    element("map-status").textContent =
+      "Your ping has expired. Send another little hello.";
   }
   updateCount();
   updateCardTime();
+  activity.updateTime();
 }, 250);
 
 function selectLocation() {
@@ -220,7 +274,10 @@ function selectLocation() {
     Math.abs(lat) <= 90 &&
     Math.abs(lon) <= 180;
   marker.hidden = !valid;
-  if (valid) position(marker, [lon, lat]);
+  if (valid) {
+    element("map-feedback").hidden = true;
+    position(marker, [lon, lat]);
+  }
 }
 latitude.addEventListener("input", selectLocation);
 longitude.addEventListener("input", selectLocation);
@@ -242,6 +299,38 @@ svg.addEventListener("click", (event) => {
   latitude.value = coordinates[1].toFixed(4);
   longitude.value = coordinates[0].toFixed(4);
   selectLocation();
+  composer.locationSelected();
+});
+
+function revealAccepted() {
+  if (!acceptedPing || acceptedPing.expiresAt <= now()) return;
+  element("map-panel").scrollIntoView({ block: "start" });
+  showCard(acceptedPing, element("view-ping"), true);
+  card.focus({ preventScroll: true });
+}
+element("view-ping").addEventListener("click", revealAccepted);
+const composer = setupComposer({
+  selectLocation,
+  beforeOpen: () => closeCard(),
+  accepted(ping) {
+    acceptedPing = ping;
+    addPing(ping, true);
+    activity.select(ping.id);
+    element("selection").hidden = true;
+    element("map-feedback").hidden = false;
+    const expired = ping.expiresAt <= now();
+    element("map-status").textContent = expired
+      ? "Your ping has expired. Send another little hello."
+      : "Your ping is on the map. Hello, world.";
+    element("view-ping").hidden = false;
+    element<HTMLButtonElement>("view-ping").disabled = expired;
+    if (expired) element("open-composer").focus();
+    else revealAccepted();
+  },
+});
+setupFullscreen(() => {
+  activity.refreshGroups();
+  placeCard();
 });
 
 let socket: WebSocket | null = null;
@@ -256,6 +345,7 @@ function connection(state: string, label: string, message = "") {
   status.textContent = label;
   element("connection-notice").hidden = !message;
   element("connection-message").textContent = message;
+  updateCount();
 }
 function connect() {
   if (stopped) return;
@@ -293,7 +383,8 @@ function connect() {
     }
     serverOffset = data.serverTime - Date.now();
     if (data.type === "snapshot") {
-      closeCard();
+      closeCard(card.contains(document.activeElement));
+      activity.reset();
       pings.clear();
       dots.replaceChildren();
       for (const ping of data.pings) addPing(ping, false);
@@ -351,62 +442,3 @@ window.addEventListener("pageshow", (event) => {
   }
 });
 connect();
-
-form.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const button = element<HTMLButtonElement>("send");
-  const status = element("form-status");
-  const title = element<HTMLInputElement>("title").value.trim();
-  const message = element<HTMLTextAreaElement>("message").value.trim();
-  status.dataset.error = "false";
-  if (
-    !title ||
-    [...title].length > 80 ||
-    !message ||
-    [...message].length > 160
-  ) {
-    status.dataset.error = "true";
-    status.textContent =
-      "Use 1–80 characters for the title and 1–160 for the sentence.";
-    return;
-  }
-  const imageUrl = element<HTMLInputElement>("imageUrl").value.trim();
-  button.disabled = true;
-  status.textContent = "Sending your ping…";
-  try {
-    const response = await fetch("/api/pings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        latitude: Number(latitude.value),
-        longitude: Number(longitude.value),
-        title,
-        message,
-        ...(imageUrl ? { imageUrl } : {}),
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!response.ok) {
-      let failure: ApiError;
-      try {
-        failure = await response.json();
-      } catch {
-        throw new Error("The live service is unavailable. Try again later.");
-      }
-      throw new Error(failure.error.message);
-    }
-    const ping: Ping = await response.json();
-    addPing(ping, true);
-    status.textContent = "Your ping is on the map. Hello, world.";
-  } catch (cause) {
-    status.dataset.error = "true";
-    status.textContent =
-      cause instanceof Error &&
-      cause.name !== "TypeError" &&
-      cause.name !== "TimeoutError"
-        ? cause.message
-        : "We could not confirm your ping. Check the map before you try again.";
-  } finally {
-    button.disabled = false;
-  }
-});

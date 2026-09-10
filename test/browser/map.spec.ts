@@ -44,8 +44,10 @@ test("shows the same real ping in two browsers and a fresh page", async ({
 
 test("submits through the form and keeps text inert", async ({ page }) => {
   await page.goto("/");
+  await page.locator("#open-composer").click();
   await page.getByLabel("Latitude", { exact: true }).fill("0");
   await page.getByLabel("Longitude", { exact: true }).fill("0");
+  await page.locator("#continue-story").click();
   await page
     .getByLabel("Title", { exact: true })
     .fill("<img src=x onerror=alert(1)>");
@@ -151,8 +153,10 @@ test("shows a failed submission without adding a dot", async ({ page }) => {
     }),
   );
   await page.goto("/");
+  await page.locator("#open-composer").click();
   await page.getByLabel("Latitude", { exact: true }).fill("1");
   await page.getByLabel("Longitude", { exact: true }).fill("1");
+  await page.locator("#continue-story").click();
   await page.getByLabel("Title", { exact: true }).fill("A signal");
   await page.getByLabel("A short sentence").fill("Try again.");
   await page.getByRole("button", { name: "Send ping" }).click();
@@ -173,12 +177,16 @@ test("loads external images only for open cards and uses a placeholder on failur
   await page.goto("/");
   const ping = await submit(page, {
     ...payload,
+    title: "Image signal",
     imageUrl: "https://images.example.test/broken.png",
   } as typeof payload);
-  const dot = page.locator(`#ping-${ping.id}`);
-  await expect(dot).toBeVisible();
+  const row = page.getByRole("button", {
+    name: "Read Image signal",
+    exact: true,
+  });
+  await expect(row).toBeVisible();
   expect(imageRequests).toBe(0);
-  await dot.focus();
+  await row.click();
   await expect(page.locator("#card-picture span")).toBeVisible();
   expect(imageRequests).toBe(1);
 });
@@ -199,6 +207,8 @@ test("supports touch, screen bounds, map selection, and reduced motion", async (
   ).toBeVisible();
   await page.locator("#world").tap({ position: { x: 240, y: 70 } });
   await expect(page.locator("#latitude")).not.toHaveValue("");
+  await expect(page.locator("#title")).toBeFocused();
+  await page.locator("#close-composer").click();
   const ping = await submit(page, {
     ...payload,
     latitude: -35,
@@ -243,7 +253,7 @@ test("serves the API guide and runs its JavaScript example against the service",
   await page.goto("/");
   await expect(
     page.getByRole("button", {
-      name: "Hello from San Francisco: We just shipped our first project.",
+      name: "Read Hello from San Francisco",
     }),
   ).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -295,8 +305,10 @@ test("shows a service error from the API", async ({ page }) => {
     }),
   );
   await page.goto("/");
+  await page.locator("#open-composer").click();
   await page.getByLabel("Latitude", { exact: true }).fill("0");
   await page.getByLabel("Longitude", { exact: true }).fill("0");
+  await page.locator("#continue-story").click();
   await page.getByLabel("Title", { exact: true }).fill("A signal");
   await page.getByLabel("A short sentence").fill("Try again later.");
   await page.getByRole("button", { name: "Send ping" }).click();

@@ -4,6 +4,15 @@
 Send a location, title, sentence, and optional image URL with one JSON request.
 The ping pulses for two seconds, then leaves a dot for another minute.
 Use **Full screen** above the map to expand it. Press Escape or **Exit full screen** to return.
+Click the map to choose a location and open the story form directly.
+Use **Send a ping** to open the form and enter coordinates manually.
+The form keeps your draft when you close it. An accepted ping opens on the map.
+The map fills the available screen. **Live feed** shows active pings in a horizontal ticker at the bottom.
+The feed advances every five seconds when its items extend beyond the screen.
+Use the arrows or swipe to browse. Use **Pause** to stop the feed.
+The feed pauses during hover, keyboard use, and open cards or forms. It starts paused when reduced motion is enabled.
+A count button opens pings whose map targets overlap. The map and feed remove each ping when it expires.
+The form shows text limits, field errors, and the server's retry delay. It does not retry submissions automatically.
 
 Cloudflare Access protects the site and API with the existing `chris-only` policy.
 Sign in before you use the hosted map. Anonymous requests redirect to the Access login.
@@ -81,6 +90,8 @@ See [the deployment guide](docs/hosting.md) for operations and quota checks.
 - `test/`: Worker integration tests and browser tests.
 
 Vite bundles TypeScript, D3 geographic tools, and World Atlas geometry.
+The map uses D3's [Equal Earth projection](https://d3js.org/d3-geo/cylindrical#geoEqualEarth), which preserves relative area.
+Country outlines, ping positions, and map selections use the same projection.
 The map does not request external tiles, fonts, or scripts.
 A browser loads an external image only when its card opens, without a referrer.
 The image host receives that browser request. HandyMap does not fetch or store image bytes.
