@@ -7,8 +7,14 @@ const payload = {
   message: "A shared signal.",
 };
 // The room accepts one ping per source address per minute, so each real submission uses a fresh address.
+// Playwright restarts the worker after a failure, so the address also carries the worker index.
 let sources = 0;
-const freshSource = () => ({ "CF-Connecting-IP": `203.0.113.${++sources}` });
+const freshSource = () => {
+  const worker = test.info().workerIndex;
+  return {
+    "CF-Connecting-IP": `10.${worker >> 8}.${worker & 255}.${++sources}`,
+  };
+};
 function submitFromFreshSource(page: Page) {
   return page.route("**/api/pings", (route) =>
     route.continue({
@@ -85,7 +91,7 @@ test("submits through the form and keeps text inert", async ({ page }) => {
   expect(dialog).toBe(false);
 });
 
-test("expires after the two-second pulse and following minute without a reconnect extension", async ({
+test("expires sixty seconds after creation without a reconnect extension", async ({
   page,
 }) => {
   const start = Date.now();
@@ -120,7 +126,7 @@ test("expires after the two-second pulse and following minute without a reconnec
   );
   await expect(page.locator("#ping-lifetime")).not.toHaveClass(/pulse/);
   await page.locator("#ping-lifetime").focus();
-  await page.clock.fastForward(59_000);
+  await page.clock.fastForward(57_000);
   await expect(page.locator("#ping-lifetime")).toBeVisible();
   await page.clock.fastForward(1_000);
   await expect(page.locator("#ping-lifetime")).toHaveCount(0);
