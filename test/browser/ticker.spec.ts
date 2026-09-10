@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function openFeed(page: Page, count = 7) {
+async function openFeed(page: Page, count = 7, message = "A little hello.") {
   await page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
     const time = Date.now();
     socket.send(
@@ -12,7 +12,7 @@ async function openFeed(page: Page, count = 7) {
           latitude: 0,
           longitude: -140 + index * 40,
           title: `Signal ${index + 1}`,
-          message: "A little hello.",
+          message,
           createdAt: time,
           expiresAt: time + 62_000,
         })),
@@ -28,6 +28,36 @@ async function openFeed(page: Page, count = 7) {
 
 const scroll = (page: Page) =>
   page.locator("#ping-list").evaluate((node) => node.scrollLeft);
+
+test("limits the message preview to one line and opens the full message", async ({
+  page,
+}) => {
+  const message = "A live update from the map. ".repeat(6).slice(0, 160);
+  await openFeed(page, 1, message);
+  const row = page.locator(".ping-row");
+  const preview = row.locator(".ping-message");
+  await expect(preview).toHaveText(message);
+  await expect(row).toHaveAccessibleDescription(message);
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 440 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(preview).toBeInViewport({ ratio: 1 });
+    const bounds = await preview.evaluate((node) => ({
+      height: node.getBoundingClientRect().height,
+      lineHeight: parseFloat(getComputedStyle(node).lineHeight),
+      clipped: node.scrollWidth > node.clientWidth,
+      ellipsis: getComputedStyle(node).textOverflow,
+    }));
+    expect(bounds.height).toBeLessThanOrEqual(bounds.lineHeight + 1);
+    expect(bounds.clipped).toBe(true);
+    expect(bounds.ellipsis).toBe("ellipsis");
+    await expect(page.locator("#world")).toBeInViewport({ ratio: 0.99 });
+  }
+  await row.click();
+  await expect(page.locator("#card-message")).toHaveText(message);
+});
 
 test("keeps the map, send action, and horizontal feed within the viewport", async ({
   page,
