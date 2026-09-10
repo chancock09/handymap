@@ -1,9 +1,12 @@
 # HandyMap
 
-[HandyMap](https://handymap.gobbi.tech) is a public world map for small, shared signals.
+[HandyMap](https://handymap.gobbi.tech) is a private world map for small, shared signals.
 Send a location, title, sentence, and optional image URL with one JSON request.
 The ping pulses for two seconds, then leaves a dot for another minute.
 Use **Full screen** above the map to expand it. Press Escape or **Exit full screen** to return.
+
+Cloudflare Access protects the site and API with the existing `chris-only` policy.
+Sign in before you use the hosted map. Anonymous requests redirect to the Access login.
 
 Read the [API guide](https://handymap.gobbi.tech/docs) for examples and error responses.
 
@@ -43,7 +46,9 @@ The browser form uses the same endpoint and limits.
 The complete UTF-8 body must be at most 4 KiB.
 The API ignores extra fields and returns only the supported fields.
 Clients must use `Content-Type: application/json`.
-Public browser requests use CORS without credentials.
+The local API supports Cross-Origin Resource Sharing (CORS) without credentials.
+The hosted API requires an Access session. Use the form or JavaScript from the signed-in site.
+Anonymous scripts cannot pass the private Access gate. Cross-origin preflight requests receive `403`.
 
 ## Limits
 
@@ -71,7 +76,7 @@ See [the deployment guide](docs/hosting.md) for operations and quota checks.
 - `src/server/`: HTTP validation, the Worker router, and the shared Durable Object.
 - `src/client/`: the world map, form, cards, styles, and API examples.
 - `src/protocol.ts`: shared payload types and lifetimes.
-- `index.html` and `docs/index.html`: the map page and public API guide.
+- `index.html` and `docs/index.html`: the map page and API guide.
 - `public/`: static headers, favicon, error page, and third-party notices.
 - `test/`: Worker integration tests and browser tests.
 
@@ -105,7 +110,7 @@ npm audit
 
 The server tests check races, time boundaries, validation, CORS, expiry, eviction, and connection caps.
 Browser tests check shared updates, form results, cards, images, mobile layouts, and reduced motion.
-The public link check prevents accidental links to private infrastructure hostnames.
+The link check prevents accidental links to private infrastructure hostnames.
 GitHub Actions runs the checks before a production deployment from `master`.
 
 The `sharp` override selects the patched `0.35.4` release for the local Cloudflare tools.

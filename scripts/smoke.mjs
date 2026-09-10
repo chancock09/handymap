@@ -1,71 +1,86 @@
 import assert from "node:assert/strict";
+import https from "node:https";
+
 const origin = new URL(process.argv[2] ?? "https://handymap.gobbi.tech");
-for (const path of ["/", "/docs", "/healthz"]) {
-  const response = await fetch(new URL(path, origin), {
-    redirect: "manual",
-    signal: AbortSignal.timeout(15_000),
-  });
-  assert.equal(
-    response.status,
-    200,
-    `${path} must return 200 without an Access redirect`,
-  );
-  await response.arrayBuffer();
-  console.log(`${path}: public`);
-}
-const preflight = await fetch(new URL("/api/pings", origin), {
-  method: "OPTIONS",
-  redirect: "manual",
-  signal: AbortSignal.timeout(15_000),
-  headers: {
-    Origin: "https://example.com",
-    "Access-Control-Request-Method": "POST",
-    "Access-Control-Request-Headers": "Content-Type",
+assert.equal(origin.protocol, "https:");
+const checks = [
+  { path: "/" },
+  { path: "/docs" },
+  { path: "/favicon.svg" },
+  { path: "/_gate-check-asset.js" },
+  { path: "/healthz" },
+  {
+    path: "/api/pings",
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
   },
-});
-assert.equal(preflight.status, 204);
-assert.equal(preflight.headers.get("Access-Control-Allow-Origin"), "*");
-console.log("/api/pings: public preflight");
-const url = new URL("/ws", origin);
-url.protocol = origin.protocol === "https:" ? "wss:" : "ws:";
-await new Promise((resolve, reject) => {
-  const socket = new WebSocket(url);
-  const timeout = setTimeout(() => {
-    socket.close();
-    reject(new Error("WebSocket snapshot timed out"));
-  }, 15_000);
-  socket.addEventListener(
-    "message",
-    (event) => {
-      clearTimeout(timeout);
-      try {
-        const data = JSON.parse(event.data);
-        assert.equal(data.type, "snapshot");
-        assert.ok(Array.isArray(data.pings));
-        socket.close(1000);
-        resolve();
-      } catch (error) {
-        socket.close();
-        reject(error);
-      }
+  {
+    path: "/api/pings",
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://example.com",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "Content-Type",
     },
-    { once: true },
-  );
-  socket.addEventListener(
-    "error",
-    () => {
-      clearTimeout(timeout);
-      reject(new Error("Public WebSocket connection failed"));
+  },
+  {
+    path: "/ws",
+    headers: {
+      Connection: "Upgrade",
+      Upgrade: "websocket",
+      "Sec-WebSocket-Version": "13",
+      "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==",
     },
-    { once: true },
-  );
-  socket.addEventListener(
-    "close",
-    (event) => {
-      clearTimeout(timeout);
-      reject(new Error(`WebSocket closed before snapshot: ${event.code}`));
-    },
-    { once: true },
-  );
-});
-console.log("/ws: public snapshot");
+  },
+];
+for (const { path, method = "GET", headers = {}, body } of checks) {
+  await new Promise((resolve, reject) => {
+    const request = https.request(
+      new URL(path, origin),
+      { method, headers },
+      (response) => {
+        response.resume();
+        try {
+          if (method === "OPTIONS") {
+            assert.equal(
+              response.statusCode,
+              403,
+              "Access must deny anonymous preflight",
+            );
+            assert.equal(
+              response.headers["access-control-allow-origin"],
+              undefined,
+            );
+          } else {
+            assert.equal(
+              response.statusCode,
+              302,
+              `${method} ${path} must redirect to Access`,
+            );
+            const target = new URL(response.headers.location);
+            assert.equal(target.protocol, "https:");
+            assert.equal(target.hostname, "gobbi-tech.cloudflareaccess.com");
+            assert.equal(
+              target.pathname,
+              `/cdn-cgi/access/login/${origin.hostname}`,
+            );
+          }
+          response.on("end", resolve);
+        } catch (error) {
+          reject(error);
+        }
+      },
+    );
+    request.on("upgrade", (_response, socket) => {
+      socket.destroy();
+      reject(new Error("Anonymous WebSocket upgrade passed the Access gate"));
+    });
+    request.on("error", reject);
+    request.setTimeout(15_000, () =>
+      request.destroy(new Error("Access check timed out")),
+    );
+    request.end(body);
+  });
+  console.log(`${method} ${path}: Access login required`);
+}

@@ -6,8 +6,9 @@ const payload = {
   message: "We just shipped our first project.",
 };
 const endpoint = `${location.origin}/api/pings`;
+const localEndpoint = "http://localhost:8787/api/pings";
 document.getElementById("curl-example")!.textContent =
-  `curl '${endpoint}' \\\n  --header 'Content-Type: application/json' \\\n  --data '${JSON.stringify(payload, null, 2)}'`;
+  `curl '${localEndpoint}' \\\n  --header 'Content-Type: application/json' \\\n  --data '${JSON.stringify(payload, null, 2)}'`;
 document.getElementById("js-example")!.textContent =
   `const response = await fetch('${endpoint}', {
   method: 'POST',
@@ -29,7 +30,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>(
       await navigator.clipboard.writeText(
         document.getElementById(button.dataset.copy!)!.textContent!,
       );
-      status.textContent = "Copied. Run the example to send a public ping.";
+      status.textContent = "Copied. Run the example to send a ping.";
     } catch {
       status.textContent = "Select the example and copy it with your keyboard.";
     }
