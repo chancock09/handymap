@@ -1,0 +1,150 @@
+@import url("./shared.css");
+.guide {
+  max-width: 800px;
+  padding-top: 58px;
+  padding-bottom: 45px;
+}
+.guide h1 {
+  font-size: clamp(36px, 6vw, 58px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin: 18px 0 20px;
+}
+.lead {
+  font-size: 17px !important;
+  line-height: 1.8 !important;
+  color: var(--muted);
+  max-width: 590px;
+}
+.guide section {
+  margin-top: 45px;
+}
+.guide h2 {
+  font-weight: 500;
+  font-size: 25px;
+  letter-spacing: -0.7px;
+  margin: 0 0 16px;
+}
+.guide p {
+  font-size: 14px;
+  line-height: 1.85;
+  color: #bdc9bf;
+}
+.guide p code {
+  font-size: 12px;
+  color: var(--accent);
+  background: #b8ef980b;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  padding: 12px 16px;
+  background: #1d2c25;
+  border-radius: 8px 8px 0 0;
+  margin-top: 22px;
+  font: 9px var(--mono);
+  letter-spacing: 1px;
+  color: var(--muted);
+}
+.code-header button {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: 11px var(--sans);
+  cursor: pointer;
+  padding: 4px;
+}
+pre {
+  background: var(--panel);
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  overflow: auto;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #d1e7c4;
+}
+.code-header + pre {
+  margin-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.6;
+}
+th {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 11px;
+}
+td,
+th {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--line);
+}
+td:first-child,
+th:first-child {
+  padding-left: 0;
+}
+td code {
+  color: var(--accent);
+  font-size: 11px;
+}
+.table-wrap {
+  overflow: auto;
+}
+.guide-note {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  background: var(--panel);
+  border-radius: 5px;
+  padding: 22px;
+  margin-top: 40px;
+}
+.guide-note p:last-child {
+  margin-bottom: 0;
+}
+.guide-note .eyebrow {
+  font-size: 10px;
+}
+.copy-status {
+  font-size: 11px !important;
+  color: var(--accent) !important;
+}
+.copy-status:empty {
+  display: none;
+}
+@media (max-width: 720px) {
+  .guide {
+    padding-top: 35px;
+  }
+  .guide section {
+    margin-top: 34px;
+  }
+  .guide h2 {
+    font-size: 23px;
+  }
+  pre {
+    font-size: 11px;
+    padding: 16px;
+  }
+  .guide p {
+    font-size: 13px;
+  }
+  td,
+  th {
+    padding: 10px 7px;
+  }
+  .site-footer a {
+    font-size: 9px;
+  }
+}

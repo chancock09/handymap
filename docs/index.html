@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Send a ping to HandyMap with one JSON request. No account or API key required."
+    />
+    <meta name="theme-color" content="#101918" />
+    <title>API guide — HandyMap</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script type="module" src="/src/client/docs.ts"></script>
+  </head>
+  <body>
+    <header class="site-header shell">
+      <a class="brand" href="/"
+        ><span class="brand-icon" aria-hidden="true">✳</span> HandyMap<span
+          class="brand-label"
+          >A SHARED LITTLE WORLD</span
+        ></a
+      >
+      <nav aria-label="Main">
+        <a href="/">Back to the map <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main class="guide shell">
+      <p class="eyebrow">THE HANDYMAP API · VERSION 1</p>
+      <h1>
+        A little hello.<br />One simple request<span class="accent">.</span>
+      </h1>
+      <p class="lead">
+        Send a ping from your project, script, or website. No account. No API
+        key. Just a location and a small story.
+      </p>
+      <section aria-labelledby="quick-start">
+        <h2 id="quick-start">Send your first ping</h2>
+        <p>
+          Send JSON to <code>POST /api/pings</code>. This example sends a real,
+          public ping.
+        </p>
+        <div class="code-header">
+          <span>TERMINAL</span
+          ><button type="button" data-copy="curl-example">Copy curl</button>
+        </div>
+        <pre><code id="curl-example"></code></pre>
+        <div class="code-header">
+          <span>JAVASCRIPT · BROWSER OR NODE.JS</span
+          ><button type="button" data-copy="js-example">Copy JavaScript</button>
+        </div>
+        <pre><code id="js-example"></code></pre>
+        <p id="copy-status" role="status" class="copy-status"></p>
+      </section>
+      <section aria-labelledby="payload">
+        <h2 id="payload">What to send</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Type</th>
+                <th>Limit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>latitude</code></td>
+                <td>number</td>
+                <td>−90 to 90, inclusive</td>
+              </tr>
+              <tr>
+                <td><code>longitude</code></td>
+                <td>number</td>
+                <td>−180 to 180, inclusive</td>
+              </tr>
+              <tr>
+                <td><code>title</code></td>
+                <td>string</td>
+                <td>1–80 characters after trim</td>
+              </tr>
+              <tr>
+                <td><code>message</code></td>
+                <td>string</td>
+                <td>1–160 characters after trim</td>
+              </tr>
+              <tr>
+                <td><code>imageUrl</code></td>
+                <td>string, optional</td>
+                <td>HTTPS URL, up to 2,048 characters; no credentials</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Send numbers as JSON numbers. Zero is valid. Text limits count Unicode
+          code points. The entire UTF-8 body must be 4 KiB or smaller.
+        </p>
+        <p>
+          Text appears as plain text. Supply a small image that its host allows
+          other sites to display. HandyMap loads it when someone opens the card.
+          The image host receives that request; HandyMap does not upload,
+          resize, or store the image.
+        </p>
+      </section>
+      <section aria-labelledby="response">
+        <h2 id="response">What comes back</h2>
+        <p>
+          A successful request returns <code>201 Created</code> with your ping:
+        </p>
+        <pre><code>{
+  "latitude": 37.7749,
+  "longitude": -122.4194,
+  "title": "Hello from San Francisco",
+  "message": "We just shipped our first project.",
+  "id": "f71a71d0-bafa-408e-b908-319d70678cf0",
+  "createdAt": 1789056000000,
+  "expiresAt": 1789056062000
+}</code></pre>
+        <p>
+          Times use Unix milliseconds. The server adds <code>id</code>,
+          <code>createdAt</code>, and <code>expiresAt</code>. It includes
+          <code>imageUrl</code> when you supply one.
+        </p>
+        <p>
+          A new ping pulses for two seconds. Its dot stays for another 60
+          seconds. Hover, focus, or tap the dot to read its card. Refreshes do
+          not extend that time.
+        </p>
+      </section>
+      <section aria-labelledby="limits">
+        <h2 id="limits">One world. One shared limit.</h2>
+        <p>
+          The map accepts one ping every 1,000 milliseconds across
+          <strong>all callers</strong>. It rejects every extra request
+          immediately. There is no queue or automatic retry.
+        </p>
+        <p>
+          The initial daily limit is 10,000 accepted pings. It resets at
+          midnight UTC. Invalid requests do not consume an acceptance slot. Live
+          connections have a separate cap of 100 viewers.
+        </p>
+        <pre><code>HTTP/1.1 429 Too Many Requests
+Retry-After: 1
+
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "The map accepts one ping per second. Try again later.",
+    "retryAfterMs": 742
+  }
+}</code></pre>
+        <p>
+          On <code>429</code>, wait at least the number of seconds in
+          <code>Retry-After</code>. Add a small random delay before you retry.
+          Another caller can take the next slot. Avoid retry loops; use a small
+          retry count.
+        </p>
+        <p>
+          For <code>daily_limit</code>, <code>Retry-After</code> points to
+          midnight UTC. A network failure does not prove rejection: the server
+          can accept a ping before the response reaches you.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>400</code></td>
+                <td>Invalid JSON or payload</td>
+              </tr>
+              <tr>
+                <td><code>404</code></td>
+                <td>Unknown API endpoint</td>
+              </tr>
+              <tr>
+                <td><code>405</code></td>
+                <td>Wrong HTTP method</td>
+              </tr>
+              <tr>
+                <td><code>413</code></td>
+                <td>Body exceeds 4 KiB</td>
+              </tr>
+              <tr>
+                <td><code>415</code></td>
+                <td>Content type is not application/json</td>
+              </tr>
+              <tr>
+                <td><code>429</code></td>
+                <td>One-second or daily limit</td>
+              </tr>
+              <tr>
+                <td><code>503</code></td>
+                <td>Live service unavailable</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Application errors use
+          <code>{ "error": { "code": "…", "message": "…" } }</code>. Cloudflare
+          can return its own error page when its free quota runs out. The map
+          shell and this guide remain static.
+        </p>
+      </section>
+      <section aria-labelledby="public">
+        <h2 id="public">A public, temporary space</h2>
+        <p>
+          Anyone can send a ping. Use a location and text you want to share
+          publicly. There are no accounts, private pings, or public archives.
+          Other viewers can copy what they see.
+        </p>
+        <p>
+          The API supports requests from other websites through Cross-Origin
+          Resource Sharing (CORS). Use
+          <code>Content-Type: application/json</code>. Preflight requests do not
+          consume the shared acceptance slot.
+        </p>
+        <p>
+          This project runs on a free service with finite quotas. Rejected
+          requests still use quota. The map can stop accepting pings or live
+          connections until the quota resets.
+        </p>
+      </section>
+      <aside class="guide-note">
+        <p class="eyebrow">HAVE AN OLDER INTEGRATION?</p>
+        <p>
+          Version 1 replaces <code>POST /</code> and the Socket.IO
+          <code>addBubble</code> event. Use <code>POST /api/pings</code>. The
+          server now controls color and lifetime.
+        </p>
+      </aside>
+    </main>
+    <footer class="site-footer shell">
+      <span>Small signals. Shared space.</span
+      ><a href="/">See what the world is saying ↗</a>
+    </footer>
+  </body>
+</html>

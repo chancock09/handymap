@@ -35,3 +35,9 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+dist/
+.wrangler/
+test-results/
+playwright-report/
+.dev.vars

@@ -1,145 +1,217 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
-    <title>Handymap</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
-    <script src="/datamaps.all.js"></script>
-    <style type="text/css">
-      html {
-        height: 100%;
-      }
-
-      body {
-        background-color: #1d1d1d; 
-        height: 100%;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      #map {
-        width: 100%; 
-      }
-
-      #count {
-        color: #00CDED;
-        position: absolute;
-        bottom: 1em;
-        right: 1em;
-        font-size: 2em;
-        font-family: "Arial Black", Gadget, sans-serif;
-      }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="One world. One ping at a time. Send a small hello to a shared, live world map."
+    />
+    <meta name="theme-color" content="#101918" />
+    <title>HandyMap — One world. One ping at a time.</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script type="module" src="/src/client/map.ts"></script>
   </head>
   <body>
-    <div id="map">
-    </div>
-    <div id="count">
+    <header class="site-header shell">
+      <a class="brand" href="/" aria-label="HandyMap home"
+        ><span class="brand-icon" aria-hidden="true">✳</span> HandyMap<span
+          class="brand-label"
+          >A SHARED LITTLE WORLD</span
+        ></a
+      >
+      <nav aria-label="Main">
+        <a href="/docs">API guide <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main class="shell">
+      <section class="intro">
+        <div>
+          <p class="eyebrow">A PUBLIC EXPERIMENT IN SAYING HELLO</p>
+          <h1>
+            One world.<br />One ping at a time<span class="accent">.</span>
+          </h1>
+        </div>
+        <p class="intro-copy">
+          A launch. A little victory. A hello from somewhere.<br />Send a signal
+          and share a moment with the world.
+        </p>
+      </section>
+      <div class="workspace">
+        <section class="map-panel" aria-label="Live world map">
+          <div class="map-toolbar">
+            <span class="eyebrow">THE WORLD, RIGHT NOW</span
+            ><span
+              id="connection"
+              class="connection"
+              role="status"
+              data-state="connecting"
+              >Connecting</span
+            >
+          </div>
+          <div id="map" class="world-map">
+            <svg
+              id="world"
+              viewBox="0 0 1000 560"
+              aria-label="World map. Choose coordinates with the form or select a point on the map."
+              role="img"
+            ></svg>
+            <div id="dots" class="dots"></div>
+            <span
+              id="selection"
+              class="selection"
+              hidden
+              aria-hidden="true"
+            ></span>
+          </div>
+          <div class="map-bottom">
+            <span
+              ><strong id="count">0</strong>
+              <span id="count-label">active pings</span></span
+            ><span class="map-hint">Pick a spot. Leave a little hello.</span>
+          </div>
+          <div id="connection-notice" class="connection-notice" hidden>
+            <p id="connection-message"></p>
+            <button id="reconnect" class="text-button" type="button">
+              Reconnect
+            </button>
+          </div>
+          <div class="map-caption">
+            <span class="tiny-cross" aria-hidden="true">+</span
+            ><span id="empty-message"
+              >The world is quiet. Be the first to send a ping.</span
+            ><span class="map-credit"
+              >Map:
+              <a href="https://www.naturalearthdata.com/"
+                >Natural Earth</a
+              ></span
+            >
+          </div>
+        </section>
+        <aside class="send-panel" aria-labelledby="send-title">
+          <p class="eyebrow">YOUR TURN</p>
+          <h2 id="send-title">
+            Send a little signal<span class="accent">↗</span>
+          </h2>
+          <p class="muted">
+            Use the <a href="/docs">API</a>, or try it here. Every ping shares
+            the same one-second limit.
+          </p>
+          <form id="ping-form">
+            <fieldset>
+              <legend>01 <span>Choose a location</span></legend>
+              <p class="field-help">Select the map or enter coordinates.</p>
+              <div class="coordinate-fields">
+                <label
+                  >Latitude<input
+                    id="latitude"
+                    name="latitude"
+                    type="number"
+                    min="-90"
+                    max="90"
+                    step="any"
+                    placeholder="37.7749"
+                    required
+                /></label>
+                <label
+                  >Longitude<input
+                    id="longitude"
+                    name="longitude"
+                    type="number"
+                    min="-180"
+                    max="180"
+                    step="any"
+                    placeholder="-122.4194"
+                    required
+                /></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>02 <span>Give it a story</span></legend>
+              <label
+                >Title<input
+                  name="title"
+                  id="title"
+                  placeholder="Hello from San Francisco"
+                  required
+              /></label>
+              <label
+                >A short sentence<textarea
+                  name="message"
+                  id="message"
+                  rows="2"
+                  placeholder="We just shipped our first project."
+                  required
+                ></textarea>
+              </label>
+              <label
+                >Small image URL <span class="optional">optional</span
+                ><input
+                  name="imageUrl"
+                  id="imageUrl"
+                  type="url"
+                  maxlength="2048"
+                  placeholder="https://…"
+                  aria-describedby="image-help"
+              /></label>
+              <p class="field-help" id="image-help">
+                Use a small, publicly hosted HTTPS image.
+              </p>
+            </fieldset>
+            <button id="send" class="primary-button" type="submit">
+              Send ping <span aria-hidden="true">↗</span>
+            </button>
+            <p
+              id="form-status"
+              class="form-status"
+              role="status"
+              aria-live="polite"
+            ></p>
+            <p class="privacy-note">
+              Your ping is public. A two-second pulse, then a dot for one
+              minute.
+            </p>
+          </form>
+        </aside>
+      </div>
+      <section class="api-strip" aria-labelledby="api-title">
+        <div>
+          <p class="eyebrow">MADE FOR YOUR NEXT LITTLE THING</p>
+          <h2 id="api-title">Your project can say hello, too.</h2>
+          <p class="muted">One JSON request. No account. No API key.</p>
+        </div>
+        <a class="endpoint" href="/docs"
+          ><span>POST</span><code>/api/pings</code
+          ><span aria-hidden="true">↗</span></a
+        >
+      </section>
+    </main>
+    <footer class="site-footer shell">
+      <span>Small signals. Shared space.</span
+      ><span>Public by nature. Temporary by design.</span>
+    </footer>
+    <section
+      id="ping-card"
+      class="ping-card"
+      aria-labelledby="card-title"
+      tabindex="-1"
+      hidden
+    >
+      <button
+        id="close-card"
+        class="close-button"
+        type="button"
+        aria-label="Close ping card"
+      >
+        ×
+      </button>
+      <div id="card-picture" class="card-picture">
+        <span aria-hidden="true">✳</span>
+      </div>
+      <p class="eyebrow" id="card-location"></p>
+      <h2 id="card-title"></h2>
+      <p id="card-message"></p>
+      <p id="card-time" class="field-help"></p>
+    </section>
   </body>
-  <footer>
-    <script>
-      var LAT_MIN = 24;
-      var LAT_MAX = 50;
-      var LONG_MIN = -124;
-      var LONG_MAX = -66;
-      var WIDTH_DENOMINATOR = 80.0;
-      var DURATION_SEC = 5;
-
-      var BLUE = '#00CDED';
-      var GREEN = '#42D0B3';
-      var PURPLE = '#993092';
-      var RED = '#FF5C5C';
-      var YELLOW = '#FFB600';
-      var WHITE = '#FFFFFF';
-      var BLACK = '#000000';
-
-      function Bubble(data) {
-        this.radius = bubbleRadius(),
-        this.latitude = parseFloat(data.latitude) || randLat(),
-        this.longitude = parseFloat(data.longitude) || randLong(),
-        this.borderColor = WHITE,
-        this.fillKey = data.color || randColor(),
-        this.borderWidth = 0.5,
-        this.fillOpacity = 0.8,
-        this.params = {
-          exitDelay: (data.duration || DURATION_SEC) * 1000
-        }
-      }
-
-      function bubbleRadius() {
-        width = d3.select("body")
-                  .node()
-                  .getBoundingClientRect()
-                  .width;
-
-        return width / WIDTH_DENOMINATOR;
-      }
-
-      function randColor() {
-        colors = [BLUE, GREEN, PURPLE, RED, YELLOW];
-        return colors[Math.floor(Math.random() * colors.length)];
-      }
-
-      function randLat() {
-        return rand(LAT_MIN, LAT_MAX);
-      }
-
-      function randLong() {
-        return rand(LONG_MIN, LONG_MAX);
-      }
-
-      function rand(min, max) {
-        return Math.random() * (max - min) + min;
-      }
-
-      var count = 0;
-
-      Datamap.prototype.addBubble = function(bubble) {
-        console.log(bubble);
-
-        this.bubbles([bubble], bubble.params);
-        this.bubbles([], bubble.params);
-
-        d3.select('#count')
-          .text(++count);
-      }
-
-      var map = new Datamap({
-        scope: 'usa',
-        element: document.getElementById('map'),
-        geographyConfig: {
-          popupOnHover: true,
-          highlightOnHover: true,
-          hideHawaiiAndAlaska: true    
-        },
-        geographyConfig: {
-          borderColor: BLUE
-        },
-        responsive: true,
-        fills: {
-          defaultFill: BLUE,
-          [WHITE]: WHITE,
-          [BLACK]: BLACK,
-          [BLUE]: BLUE,
-          [PURPLE]: PURPLE,
-          [RED]: RED,
-          [YELLOW]: YELLOW,
-          [GREEN]: GREEN
-        }
-      });
-
-      d3.select(window).on('resize', function() {
-        map.resize();
-      });
-
-      var socket = io();
-      socket.on('addBubble', function(data) {
-        map.addBubble(new Bubble(data))
-      });
-    </script>
-  </footer>
 </html>
