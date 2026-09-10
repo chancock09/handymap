@@ -109,6 +109,8 @@ Run the Access checks after rollback. Do not change policies for other sites.
 The site uses `https://handymap.gobbi.tech` behind Cloudflare Access.
 The public bypass no longer contains the HandyMap hostname.
 The change preserved all other bypass destinations and policy IDs.
+The Durable Object marks new sessions with the private release identifier.
+It closes older sessions on restart before it can send another ping.
 The infrastructure registry marks HandyMap as private.
 
 The deployment uses the existing account and does not change its billing plan.

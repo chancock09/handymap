@@ -9,6 +9,8 @@ import {
 import { error, validateInput } from "./http";
 import type { Env } from "./index";
 
+const ACCESS_GENERATION = "private-v1";
+
 interface MapState {
   lastAcceptedAt: number | null;
   day: string;
@@ -52,6 +54,11 @@ function limit(value: string, fallback: number) {
 export class MapRoom extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    // Sessions from the public release must reconnect through the Access gate.
+    for (const socket of ctx.getWebSockets()) {
+      if (socket.deserializeAttachment() !== ACCESS_GENERATION)
+        socket.close(1008, "access_changed");
+    }
     ctx.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair("heartbeat", "alive"),
     );
@@ -86,6 +93,7 @@ export class MapRoom extends DurableObject<Env> {
         return new Response(null, { status: 101, webSocket: client });
       }
       const state = await this.state();
+      server.serializeAttachment(ACCESS_GENERATION);
       this.ctx.acceptWebSocket(server);
       const now = Date.now();
       server.send(

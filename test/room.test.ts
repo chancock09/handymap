@@ -88,3 +88,20 @@ it("answers heartbeats and rejects ping submissions over WebSocket", async () =>
   expect(await viewer.closed()).toBe(1008);
   expect((await post()).status).toBe(201);
 });
+
+it("closes public sessions on restart and preserves private sessions", async () => {
+  const legacy = await connect();
+  await legacy.next("snapshot");
+  await runInDurableObject(stub(), async (_instance, state) => {
+    for (const socket of state.getWebSockets())
+      socket.serializeAttachment(null);
+  });
+  const current = await connect();
+  await current.next("snapshot");
+  await evictDurableObject(stub());
+  const response = await post();
+  expect(response.status).toBe(201);
+  expect(await legacy.closed()).toBe(1008);
+  expect(legacy.messages).toHaveLength(0);
+  expect(await current.next("ping")).toMatchObject({ ping: input });
+});
