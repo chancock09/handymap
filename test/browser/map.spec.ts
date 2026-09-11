@@ -6,7 +6,7 @@ const payload = {
   title: "Browser check",
   message: "A shared signal.",
 };
-// The room accepts one ping per source address per minute, so each real submission uses a fresh address.
+// The room accepts one ping per source address every ten seconds, so each real submission uses a fresh address.
 // Playwright restarts the worker after a failure, so the address also carries the worker index.
 let sources = 0;
 const freshSource = () => {

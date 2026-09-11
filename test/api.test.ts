@@ -68,11 +68,11 @@ it("rejects at 999 milliseconds and accepts at exactly 1000 without a fixed-wind
   });
 });
 
-it("accepts one ping per minute from each source", async () => {
+it("accepts one ping every ten seconds from each source", async () => {
   expect((await post()).status).toBe(201);
   const repeat = await post();
   expect(repeat.status).toBe(429);
-  expect(repeat.headers.get("Retry-After")).toBe("60");
+  expect(repeat.headers.get("Retry-After")).toBe("10");
   expect(await repeat.json()).toMatchObject({
     error: { code: "source_limited", retryAfterMs: expect.any(Number) },
   });
@@ -82,7 +82,7 @@ it("accepts one ping per minute from each source", async () => {
   expect((await post()).status).toBe(429);
 });
 
-it("rejects a source at 59,999 milliseconds and accepts it at exactly 60,000", () => {
+it("rejects a source at 9,999 milliseconds and accepts it at exactly 10,000", () => {
   const time = Date.parse("2026-09-10T12:00:00Z");
   const state = {
     lastAcceptedAt: time,
@@ -91,11 +91,11 @@ it("rejects a source at 59,999 milliseconds and accepts it at exactly 60,000", (
     pings: [],
     sources: { a: time },
   };
-  expect(decideAcceptance(state, time + 59_999, 10_000, "a")).toMatchObject({
+  expect(decideAcceptance(state, time + 9_999, 10_000, "a")).toMatchObject({
     code: "source_limited",
     retryAfterMs: 1,
   });
-  expect(decideAcceptance(state, time + 60_000, 10_000, "a")).toEqual({
+  expect(decideAcceptance(state, time + 10_000, 10_000, "a")).toEqual({
     day: "2026-09-10",
     count: 2,
   });
@@ -105,7 +105,7 @@ it("rejects a source at 59,999 milliseconds and accepts it at exactly 60,000", (
   });
 });
 
-it("keeps the source limit after eviction and forgets sources after a minute", async () => {
+it("keeps the source limit after eviction and forgets sources after ten seconds", async () => {
   await post();
   await evictDurableObject(stub());
   await setState({ lastAcceptedAt: Date.now() - 2000 });
@@ -120,8 +120,8 @@ it("keeps the source limit after eviction and forgets sources after a minute", a
     expect(key).toMatch(/^[0-9a-f]{32}$/);
     expect(key).not.toContain(address);
     stored!.sources = {
-      [key]: Date.now() - 60_000,
-      stale: Date.now() - 61_000,
+      [key]: Date.now() - 10_000,
+      stale: Date.now() - 11_000,
     };
     await state.storage.put("state", stored);
   });

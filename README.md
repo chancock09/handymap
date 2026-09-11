@@ -1,8 +1,13 @@
 # HandyMap
 
-[HandyMap](https://handymap.gobbi.tech) is a private world map for small, shared signals.
-Send a location, title, sentence, and optional image URL with one JSON request.
-The ping pulses for two seconds, then leaves a dot for another minute.
+[HandyMap](https://handymap.gobbi.tech) is a live world map for small, shared signals.
+Anyone can open it, and anyone can send a ping with one JSON request or the form on the page.
+A ping has a location, a title, a sentence, and an optional image URL.
+It appears on every open map at once, pulses for two seconds, and disappears after 60 seconds.
+There are no accounts, no history, and no archive. It is a small WebSocket demo.
+
+## Use the map
+
 Use **Full screen** above the map to expand it. Press Escape or **Exit full screen** to return.
 Click the map to choose a location and open the story form directly.
 The header shows how many other visitors are online. When no one else is online, it shows **0 others online**.
@@ -19,8 +24,7 @@ The feed pauses during hover, keyboard use, and open cards or forms. It starts p
 A count button opens pings whose map targets overlap. The map and feed remove each ping when it expires.
 The form shows text limits, field errors, and the server's retry delay. It does not retry submissions automatically.
 
-Cloudflare Access protects the site and API with the existing `chris-only` policy.
-Sign in before you use the hosted map. Anonymous requests redirect to the Access login.
+The site and API are public. Do not send anything private; everyone on the map sees it.
 
 Read the [API guide](https://handymap.gobbi.tech/docs) for examples and error responses.
 
@@ -60,16 +64,14 @@ The browser form uses the same endpoint and limits.
 The complete UTF-8 body must be at most 4 KiB.
 The API ignores extra fields and returns only the supported fields.
 Clients must use `Content-Type: application/json`.
-The local API supports Cross-Origin Resource Sharing (CORS) without credentials.
-The hosted API requires an Access session. Use the form or JavaScript from the signed-in site.
-Anonymous scripts cannot pass the private Access gate. Cross-origin preflight requests receive `403`.
+The API supports Cross-Origin Resource Sharing (CORS) without credentials, so a script on any site can send a ping.
 
 ## Limits
 
 One Durable Object controls the world map.
 It accepts one valid ping every 1,000 milliseconds across all callers.
-It also accepts at most one ping per minute from each source address.
-The Worker hashes the `CF-Connecting-IP` value; the room stores the hash for 60 seconds, not the address.
+It also accepts at most one ping every 10 seconds from each source address.
+The Worker hashes the `CF-Connecting-IP` value; the room stores the hash for 10 seconds, not the address.
 Requests without a client address share one source bucket.
 Excess requests receive `429` with `Retry-After`; the server does not queue them.
 Invalid requests and preflight requests do not consume the acceptance slot.
@@ -82,7 +84,7 @@ Invalid requests and preflight requests do not consume the acceptance slot.
 | `MAX_VIEWERS`       | 100 live WebSocket connections               |
 
 Daily counts, the last acceptance time, and the source window survive restarts and deployments.
-The one-second and one-minute limits also apply across midnight.
+The one-second and ten-second limits also apply across midnight.
 The daily cap does not limit rejected requests or connection attempts.
 Cloudflare counts those requests against its shared account quota.
 Keep the account on Workers Free; service interruptions are acceptable when its quota runs out.

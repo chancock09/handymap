@@ -1,7 +1,7 @@
 # Host HandyMap on Cloudflare
 
 HandyMap follows the Workers pattern in `chris-net-infra` and `olivia-trivia`.
-The private hostname is `handymap.gobbi.tech`.
+The public hostname is `handymap.gobbi.tech`.
 
 ## Configuration
 
@@ -22,14 +22,14 @@ Keep credentials outside this repository and public build output.
 ## Deploy and verify
 
 1. Run `npm ci`, `npm run check`, and `npm run test:browser`.
-2. Run `npm run smoke` to verify private access before deployment.
+2. Run `npm run smoke` to verify public access before deployment.
 3. Merge the checked pull request into `master`.
 4. Confirm that the GitHub Actions deployment passes its checks.
-5. Sign in through Cloudflare Access and open the map and API guide.
+5. Open the map and API guide in a private browser window.
 
 The repository has `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
 GitHub Actions checks changes before it deploys from `master`. Pull requests do not deploy.
-The workflow checks the Access gate before and after deployment.
+The workflow checks public access before and after deployment.
 Workers owns the DNS record for its custom domain.
 
 The `chris-net-infra` registry uses this row:
@@ -40,24 +40,19 @@ The `chris-net-infra` registry uses this row:
   "label": "HandyMap",
   "worker": "handymap",
   "repo": "handymap",
-  "tier": "private"
+  "tier": "public"
 }
 ```
 
-The wildcard Access application protects this hostname with the existing `chris-only` policy.
-The public bypass application must not contain HandyMap.
+The `public sites (bypass)` Access application lists this hostname, so the wildcard `chris-only` policy does not apply.
+Remove the row from that application to make the site private again; the wildcard takes over at once.
 Preserve the Access destinations and policies for other sites.
-Keep `workers.dev` and preview URLs disabled to prevent alternate access.
+Keep `workers.dev` and preview URLs disabled so the custom domain is the only entry point.
 
 Run `npm run smoke` to test anonymous requests without cookies or redirect following.
-It requires the Access login redirect for the map, docs, assets, health, API POST, and WebSocket upgrade.
-It requires `403` for anonymous preflight, as described in [Cloudflare’s CORS documentation](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/cors/).
+It requires `200` for the map, docs, assets, and health check, a `400` for an empty API POST, and CORS headers on preflight.
+It fails when any of those requests redirects to the Access login.
 Run `sh scripts/gate-check.sh handymap.gobbi.tech` in `chris-net-infra` to verify the registry entry.
-These checks prove anonymous access is blocked. They do not prove an authenticated session works.
-
-After login, use the form or the guide's JavaScript example from the hosted page.
-The curl example uses the local development server, which has no Access gate.
-Anonymous hosted API calls redirect to login. Cross-origin preflight requests receive `403`.
 The local tests check API behavior, shared updates, expiry, and the full-screen map.
 
 ## Quotas and operations
@@ -101,8 +96,13 @@ Do not change the Durable Object binding, class, or fixed object name during rol
 Those names locate the stored rate counters and active pings.
 A rollback does not undo Durable Object data changes.
 
-Keep the hostname private during rollback. Do not add it to the public bypass application.
-Run the Access checks after rollback. Do not change policies for other sites.
+Run `npm run smoke` after rollback. Do not change Access policies for other sites.
+
+## Access record — 2026-09-11
+
+The site went public. `handymap.gobbi.tech` is a row in the `public sites (bypass)` application.
+The registry marks HandyMap as public. The smoke check now requires open access.
+The Durable Object marks new sessions with the public release identifier and closes older sessions on restart.
 
 ## Access record — 2026-09-10
 

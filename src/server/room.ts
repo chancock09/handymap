@@ -10,7 +10,7 @@ import {
 import { error, validateInput } from "./http";
 import type { Env } from "./index";
 
-const ACCESS_GENERATION = "private-v1";
+const ACCESS_GENERATION = "public-v2";
 
 interface MapState {
   lastAcceptedAt: number | null;
@@ -59,7 +59,8 @@ export function decideAcceptance(
   ) {
     return {
       code: "source_limited",
-      message: "Each source can add one ping per minute. Try again later.",
+      message:
+        "Each source can add one ping every 10 seconds. Try again later.",
       retryAfterMs: SOURCE_INTERVAL_MS - (now - sourceAcceptedAt),
     };
   }
@@ -92,7 +93,7 @@ function limit(value: string, fallback: number) {
 export class MapRoom extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    // Sessions from the public release must reconnect through the Access gate.
+    // Sessions from an earlier release reconnect so they pass the current gate.
     for (const socket of ctx.getWebSockets()) {
       if (socket.deserializeAttachment() !== ACCESS_GENERATION)
         socket.close(1008, "access_changed");
