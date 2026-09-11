@@ -18,8 +18,8 @@ const latitude = element<HTMLInputElement>("latitude");
 const longitude = element<HTMLInputElement>("longitude");
 const projection = geoEqualEarth().fitExtent(
   [
-    [20, 15],
-    [980, 545],
+    [6, 4],
+    [994, 556],
   ],
   { type: "Sphere" },
 );

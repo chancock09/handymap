@@ -124,18 +124,32 @@
           <code>imageUrl</code> when you supply one.
         </p>
         <p>
-          A new ping pulses for two seconds. Its dot stays for another 60
-          seconds. Hover, focus, or tap the dot to read its card. Refreshes do
-          not extend that time.
+          A new ping pulses for two seconds. Its dot stays for 60 seconds in
+          total. Hover, focus, or tap the dot to read its card. Refreshes do not
+          extend that time.
         </p>
       </section>
       <section aria-labelledby="limits">
-        <h2 id="limits">One world. One shared limit.</h2>
+        <h2 id="limits">Room for everyone. Limits for each source.</h2>
         <p>
-          The map accepts one ping every 1,000 milliseconds across
-          <strong>all callers</strong>, and one ping every 10 seconds from
-          <strong>each source address</strong>. It rejects every extra request
-          immediately. There is no queue or automatic retry.
+          The API accepts one ping every <strong>5 seconds</strong> across API
+          callers, and one every <strong>60 seconds per source address</strong>.
+          The browser form allows one every 10 seconds per address. Both paths
+          share a map limit of one ping per second and the daily cap. There is
+          no queue or automatic retry.
+        </p>
+        <p>
+          The map blocks repeated title-and-message pairs for five minutes,
+          across all addresses and both paths. The check ignores case,
+          differences in whitespace, and equivalent Unicode forms. Changes to
+          coordinates or image URLs do not bypass it. A rejection does not
+          extend the wait.
+        </p>
+        <p>
+          <code>/api/pings</code> always uses API limits. The form uses a
+          separate route that requires same-origin browser headers. Scripts can
+          imitate those headers; this distinction does not prove a human sent
+          the request.
         </p>
         <p>
           The initial daily limit is 10,000 accepted pings. It resets at
@@ -143,13 +157,13 @@
           connections have a separate cap of 100 viewers.
         </p>
         <pre><code>HTTP/1.1 429 Too Many Requests
-Retry-After: 1
+Retry-After: 5
 
 {
   "error": {
-    "code": "rate_limited",
-    "message": "The map accepts one ping per second. Try again later.",
-    "retryAfterMs": 742
+    "code": "api_rate_limited",
+    "message": "The API accepts one ping every 5 seconds. Try again later.",
+    "retryAfterMs": 4742
   }
 }</code></pre>
         <p>
@@ -160,10 +174,14 @@ Retry-After: 1
         </p>
         <p>
           For <code>source_limited</code>, <code>Retry-After</code> counts down
-          the 10 seconds since your last accepted ping. For
-          <code>daily_limit</code>, <code>Retry-After</code> points to midnight
-          UTC. A network failure does not prove rejection: the server can accept
-          a ping before the response reaches you.
+          the 60 seconds since the last accepted ping from your address. For
+          <code>api_rate_limited</code>, it counts down the five-second API
+          interval. For <code>rate_limited</code>, it counts down the shared
+          one-second interval. For <code>duplicate_content</code>, it counts
+          down the five-minute duplicate interval. For <code>daily_limit</code>,
+          <code>Retry-After</code> points to midnight UTC. A network failure
+          does not prove rejection: the server can accept a ping before the
+          response reaches you.
         </p>
         <div class="table-wrap">
           <table>
@@ -196,7 +214,7 @@ Retry-After: 1
               </tr>
               <tr>
                 <td><code>429</code></td>
-                <td>One-second, ten-second, or daily limit</td>
+                <td>Rate limit, duplicate content, or daily cap</td>
               </tr>
               <tr>
                 <td><code>503</code></td>

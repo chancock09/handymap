@@ -1,5 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import {
+  API_INTERVAL_MS,
+  API_SOURCE_INTERVAL_MS,
+  DUPLICATE_INTERVAL_MS,
   INTERVAL_MS,
   LIFETIME_MS,
   SOURCE_INTERVAL_MS,
@@ -18,10 +21,13 @@ interface MapState {
   count: number;
   pings: Ping[];
   sources: Record<string, number>;
+  lastApiAcceptedAt?: number | null;
+  fingerprints?: Record<string, number>;
 }
 
 export interface Submission {
   source: string;
+  channel: "ui" | "api";
   input: PingInput;
 }
 
@@ -33,13 +39,14 @@ const EMPTY_STATE: MapState = {
   sources: {},
 };
 
-function activeSources(
+function activeEntries(
   sources: Record<string, number> | undefined,
   now: number,
+  interval: number,
 ) {
   return Object.fromEntries(
     Object.entries(sources ?? {}).filter(
-      ([, acceptedAt]) => now - acceptedAt < SOURCE_INTERVAL_MS,
+      ([, acceptedAt]) => now - acceptedAt < interval,
     ),
   );
 }
@@ -49,19 +56,22 @@ export function decideAcceptance(
   now: number,
   dailyLimit: number,
   source: string,
+  channel: Submission["channel"],
+  fingerprint?: string,
 ) {
   const day = new Date(now).toISOString().slice(0, 10);
   const count = state.day === day ? state.count : 0;
+  const sourceInterval =
+    channel === "api" ? API_SOURCE_INTERVAL_MS : SOURCE_INTERVAL_MS;
   const sourceAcceptedAt = state.sources?.[source];
   if (
     sourceAcceptedAt !== undefined &&
-    now - sourceAcceptedAt < SOURCE_INTERVAL_MS
+    now - sourceAcceptedAt < sourceInterval
   ) {
     return {
       code: "source_limited",
-      message:
-        "Each source can add one ping every 10 seconds. Try again later.",
-      retryAfterMs: SOURCE_INTERVAL_MS - (now - sourceAcceptedAt),
+      message: `Each source can add one ${channel === "api" ? "API " : ""}ping every ${sourceInterval / 1000} seconds. Try again later.`,
+      retryAfterMs: sourceInterval - (now - sourceAcceptedAt),
     };
   }
   if (
@@ -74,6 +84,17 @@ export function decideAcceptance(
       retryAfterMs: INTERVAL_MS - (now - state.lastAcceptedAt),
     };
   }
+  if (
+    channel === "api" &&
+    state.lastApiAcceptedAt != null &&
+    now - state.lastApiAcceptedAt < API_INTERVAL_MS
+  ) {
+    return {
+      code: "api_rate_limited",
+      message: "The API accepts one ping every 5 seconds. Try again later.",
+      retryAfterMs: API_INTERVAL_MS - (now - state.lastApiAcceptedAt),
+    };
+  }
   if (count >= dailyLimit) {
     const midnight = Date.parse(`${day}T00:00:00Z`) + 86_400_000;
     return {
@@ -82,7 +103,39 @@ export function decideAcceptance(
       retryAfterMs: midnight - now,
     };
   }
+  const duplicateAt = fingerprint
+    ? state.fingerprints?.[fingerprint]
+    : undefined;
+  if (duplicateAt !== undefined && now - duplicateAt < DUPLICATE_INTERVAL_MS) {
+    return {
+      code: "duplicate_content",
+      message:
+        "This title and message were shared recently. Wait 5 minutes before you repeat them.",
+      retryAfterMs: DUPLICATE_INTERVAL_MS - (now - duplicateAt),
+    };
+  }
   return { day, count: count + 1 };
+}
+
+async function fingerprintOf(input: PingInput) {
+  const normalize = (value: string) =>
+    value.normalize("NFKC").toLowerCase().replace(/\s+/gu, " ").trim();
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(
+      JSON.stringify([normalize(input.title), normalize(input.message)]),
+    ),
+  );
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function nextExpiry(pings: Ping[], fingerprints: Record<string, number>) {
+  return Math.min(
+    ...pings.map((ping) => ping.expiresAt),
+    ...Object.values(fingerprints).map((time) => time + DUPLICATE_INTERVAL_MS),
+  );
 }
 
 function limit(value: string, fallback: number) {
@@ -109,10 +162,14 @@ export class MapRoom extends DurableObject<Env> {
 
   async fetch(request: Request): Promise<Response> {
     if (request.method === "POST") {
-      const { source, input } = (await request.json()) as Submission;
+      const { source, input, channel } = (await request.json()) as Submission;
       if (typeof source !== "string" || !source)
         return error(400, "invalid_payload", "A source is required.");
-      return this.accept(source, validateInput(input));
+      return this.accept(
+        source,
+        validateInput(input),
+        channel === "ui" ? "ui" : "api",
+      );
     }
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
       return error(426, "upgrade_required", "Use a WebSocket connection.");
@@ -183,7 +240,12 @@ export class MapRoom extends DurableObject<Env> {
     }
   }
 
-  private async accept(source: string, input: PingInput): Promise<Response> {
+  private async accept(
+    source: string,
+    input: PingInput,
+    channel: Submission["channel"],
+  ): Promise<Response> {
+    const fingerprint = await fingerprintOf(input);
     return this.ctx.blockConcurrencyWhile(async () => {
       const outcome = await this.ctx.storage.transaction(
         async (transaction) => {
@@ -195,6 +257,8 @@ export class MapRoom extends DurableObject<Env> {
             now,
             limit(this.env.MAX_PINGS_PER_DAY, 10_000),
             source,
+            channel,
+            fingerprint,
           );
           if ("code" in decision) return { rejection: decision };
           const ping: Ping = {
@@ -207,14 +271,24 @@ export class MapRoom extends DurableObject<Env> {
             ...state.pings.filter((item) => item.expiresAt > now),
             ping,
           ];
+          const fingerprints = {
+            ...activeEntries(state.fingerprints, now, DUPLICATE_INTERVAL_MS),
+            [fingerprint]: now,
+          };
           await transaction.put("state", {
             lastAcceptedAt: now,
             day: decision.day,
             count: decision.count,
             pings,
-            sources: { ...activeSources(state.sources, now), [source]: now },
+            sources: {
+              ...activeEntries(state.sources, now, API_SOURCE_INTERVAL_MS),
+              [source]: now,
+            },
+            lastApiAcceptedAt:
+              channel === "api" ? now : (state.lastApiAcceptedAt ?? null),
+            fingerprints,
           } satisfies MapState);
-          await transaction.setAlarm(pings[0].expiresAt);
+          await transaction.setAlarm(nextExpiry(pings, fingerprints));
           return { ping };
         },
       );
@@ -246,10 +320,21 @@ export class MapRoom extends DurableObject<Env> {
         if (!state) return;
         const now = Date.now();
         state.pings = state.pings.filter((ping) => ping.expiresAt > now);
-        state.sources = activeSources(state.sources, now);
+        state.sources = activeEntries(
+          state.sources,
+          now,
+          API_SOURCE_INTERVAL_MS,
+        );
+        state.fingerprints = activeEntries(
+          state.fingerprints,
+          now,
+          DUPLICATE_INTERVAL_MS,
+        );
         await transaction.put("state", state);
-        if (state.pings.length)
-          await transaction.setAlarm(state.pings[0].expiresAt);
+        if (state.pings.length || Object.keys(state.fingerprints).length)
+          await transaction.setAlarm(
+            nextExpiry(state.pings, state.fingerprints),
+          );
       });
     });
   }

@@ -45,7 +45,7 @@ test("shows live counts on mobile and clears the count when disconnected", async
   await expect(presence).toHaveText("3 others online now");
   await expect(presence).toBeInViewport();
   await expect(page.locator("#map-title")).toHaveText(
-    "Click anywhere on the map to share a live update with everyone here.",
+    "A little hello. A whole world.",
   );
   await expect(page.locator("#world")).toBeInViewport();
   await expect(page.locator("#fullscreen")).toBeInViewport();

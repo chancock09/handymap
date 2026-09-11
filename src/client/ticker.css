@@ -3,7 +3,7 @@
   min-width: 0;
   border-top: 1px solid var(--line);
   background: #13201b;
-  padding: 12px 32px max(16px, env(safe-area-inset-bottom));
+  padding: 4px 32px max(8px, env(safe-area-inset-bottom));
 }
 .activity-header,
 .feed-heading,
@@ -88,14 +88,14 @@
 .ping-row {
   position: relative;
   width: 100%;
-  height: 110px;
+  height: 86px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 6px 12px;
+  gap: 4px 12px;
   border: 0;
   background: transparent;
   color: var(--text);
-  padding: 14px 20px 14px 32px;
+  padding: 8px 20px 8px 32px;
   text-align: left;
   cursor: pointer;
 }
@@ -103,7 +103,7 @@
   content: "";
   position: absolute;
   left: 12px;
-  top: 20px;
+  top: 14px;
   width: 6px;
   height: 6px;
   background: var(--accent);
@@ -154,7 +154,7 @@
 }
 @media (max-width: 720px) {
   .activity {
-    padding: 8px 18px max(12px, env(safe-area-inset-bottom));
+    padding: 4px 18px max(8px, env(safe-area-inset-bottom));
   }
   .feed-heading {
     gap: 6px;

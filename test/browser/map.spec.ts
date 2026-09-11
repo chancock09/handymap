@@ -6,8 +6,7 @@ const payload = {
   title: "Browser check",
   message: "A shared signal.",
 };
-// The room accepts one ping per source address every ten seconds, so each real submission uses a fresh address.
-// Playwright restarts the worker after a failure, so the address also carries the worker index.
+// A fresh address per submission isolates the source limit across tests and worker restarts.
 let sources = 0;
 const freshSource = () => {
   const worker = test.info().workerIndex;
@@ -16,7 +15,7 @@ const freshSource = () => {
   };
 };
 function submitFromFreshSource(page: Page) {
-  return page.route("**/api/pings", (route) =>
+  return page.route(/\/api\/(?:browser-pings|pings)$/, (route) =>
     route.continue({
       headers: { ...route.request().headers(), ...freshSource() },
     }),
@@ -28,7 +27,12 @@ async function submit(page: Page, data = payload) {
     const response = await page.request.post("/api/pings", { data, headers });
     if (response.status() === 201) return response.json();
     expect(response.status()).toBe(429);
-    await new Promise((resolve) => setTimeout(resolve, 1050));
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        Number(response.headers()["retry-after"]) * 1000 + 50,
+      ),
+    );
   }
   throw new Error("The API did not accept the test ping.");
 }
@@ -162,7 +166,7 @@ test("shows a failed submission without adding a dot", async ({ page }) => {
       JSON.stringify({ type: "snapshot", pings: [], serverTime: Date.now() }),
     ),
   );
-  await page.route("**/api/pings", (route) =>
+  await page.route("**/api/browser-pings", (route) =>
     route.fulfill({
       status: 429,
       contentType: "application/json",
@@ -269,7 +273,7 @@ test("serves the API guide and runs its JavaScript example against the service",
   ).toBeVisible();
   const code = await page.locator("#js-example").textContent();
   expect(code).toContain("http://127.0.0.1:8787/api/pings");
-  await page.waitForTimeout(1050);
+  await page.waitForTimeout(5050);
   await page.evaluate(async (source) => {
     await new Function(`return (async () => { ${source} })()`)();
   }, code);
@@ -320,7 +324,7 @@ test("reconnects after connection loss and replaces the previous snapshot", asyn
 });
 
 test("shows a service error from the API", async ({ page }) => {
-  await page.route("**/api/pings", (route) =>
+  await page.route("**/api/browser-pings", (route) =>
     route.fulfill({
       status: 503,
       contentType: "text/html",

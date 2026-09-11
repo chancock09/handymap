@@ -6,7 +6,8 @@ export function setupFullscreen(placeCard: () => void) {
   let expanded = false;
 
   function fitMap() {
-    map.style.width = `${Math.min(stage.clientWidth, (stage.clientHeight * 1000) / 560)}px`;
+    const { width, height } = stage.getBoundingClientRect();
+    map.style.width = `${Math.floor(Math.min(width, (height * 1000) / 560))}px`;
     placeCard();
   }
 

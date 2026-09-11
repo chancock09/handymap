@@ -8,7 +8,7 @@ There are no accounts, no history, and no archive. It is a small WebSocket demo.
 
 ## Use the map
 
-Use **Full screen** above the map to expand it. Press Escape or **Exit full screen** to return.
+Use **Full screen** on the map to expand it. Press Escape or **Exit full screen** to return.
 Click the map to choose a location and open the story form directly.
 The header shows how many other visitors are online. When no one else is online, it shows **0 others online**.
 The count uses connected browsers. Tabs in one browser share a local identifier and count once when local storage is available.
@@ -53,7 +53,7 @@ curl http://localhost:8787/api/pings \
 
 The API returns `201` with the accepted payload, ID, and Unix timestamps in milliseconds.
 `expiresAt` is 60 seconds after `createdAt`.
-The browser form uses the same endpoint and limits.
+The browser form uses `/api/browser-pings` with a shorter wait between pings.
 
 | Field       | Requirement                                                       |
 | ----------- | ----------------------------------------------------------------- |
@@ -72,11 +72,25 @@ The API supports Cross-Origin Resource Sharing (CORS) without credentials, so a 
 
 One Durable Object controls the world map.
 It accepts one valid ping every 1,000 milliseconds across all callers.
-It also accepts at most one ping every 10 seconds from each source address.
-The Worker hashes the `CF-Connecting-IP` value; the room stores the hash for 10 seconds, not the address.
+The browser form accepts one ping every 10 seconds from each source address.
+The API accepts one ping every 5 seconds across API callers, and one every 60 seconds from each source address.
+Both paths share the one-second map limit, source records, and daily cap.
+A browser ping also starts the API wait for that address.
+The browser route requires a matching `Origin`, `Sec-Fetch-Site: same-origin`, and `Sec-Fetch-Mode: cors`.
+It rejects other requests with `403` and does not allow cross-origin access.
+`/api/pings` always uses API limits. Headers and payload fields cannot change its limit.
+Scripts can imitate browser headers. This distinction does not authenticate users or stop determined bots.
+The Worker hashes the `CF-Connecting-IP` value; the room retains source hashes for up to 60 seconds, without raw addresses.
 Requests without a client address share one source bucket.
 Excess requests receive `429` with `Retry-After`; the server does not queue them.
 Invalid requests and preflight requests do not consume the acceptance slot.
+
+The map rejects the same title and message for five minutes across both paths and all source addresses.
+The comparison normalizes Unicode with NFKC, converts text to lowercase, and collapses whitespace.
+Changes to coordinates or image URLs do not bypass this check.
+The room stores a SHA-256 hash for this check. Ping text still expires after 60 seconds.
+A rejection returns `duplicate_content` with the remaining wait. Rejected requests do not extend the wait or consume a slot.
+This check matches normalized text pairs; it does not detect all similar messages.
 
 `wrangler.jsonc` sets these initial caps:
 
@@ -85,8 +99,8 @@ Invalid requests and preflight requests do not consume the acceptance slot.
 | `MAX_PINGS_PER_DAY` | 10,000 accepted pings, reset at midnight UTC |
 | `MAX_VIEWERS`       | 100 live WebSocket connections               |
 
-Daily counts, the last acceptance time, and the source window survive restarts and deployments.
-The one-second and ten-second limits also apply across midnight.
+Daily counts, acceptance times, source records, and duplicate hashes survive restarts and deployments.
+Interval limits also apply across midnight.
 The daily cap does not limit rejected requests or connection attempts.
 Cloudflare counts those requests against its shared account quota.
 Keep the account on Workers Free; service interruptions are acceptable when its quota runs out.
@@ -120,7 +134,7 @@ WebSocket Hibernation keeps idle connections open without a running event loop.
 A runtime auto-response handles `heartbeat` / `alive`; other client messages close the socket.
 
 The Durable Object stores active payloads and rate counters in one transaction before broadcast.
-Alarms remove expired payloads and stop when no active pings remain.
+Alarms remove expired payloads and duplicate hashes. They stop when neither remains.
 Rate counters remain stored. There is no public history endpoint.
 Cloudflare manages storage recovery copies; this is not a guarantee of immediate physical erasure.
 Operational logs contain status codes, not submitted titles, sentences, or image URLs.

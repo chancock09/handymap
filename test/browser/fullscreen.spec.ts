@@ -132,3 +132,20 @@ for (const unsupported of [true, false]) {
     );
   });
 }
+
+test("keeps the map inside a stage with a fractional height", async ({
+  page,
+}) => {
+  await openMap(page);
+  await page.addStyleTag({
+    content: ".map-stage { flex: none; height: 180.5px; }",
+  });
+  await expect(page.locator("#world")).toBeInViewport({ ratio: 1 });
+  await expect
+    .poll(async () => {
+      const stage = (await page.locator("#map-stage").boundingBox())!;
+      const map = (await page.locator("#world").boundingBox())!;
+      return map.y >= stage.y && map.y + map.height <= stage.y + stage.height;
+    })
+    .toBe(true);
+});

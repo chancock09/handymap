@@ -25,26 +25,48 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const path = new URL(request.url).pathname;
     const isApi = path.startsWith("/api/");
+    const isBrowser = path === "/api/browser-pings";
+    const respond = (response: Response) => {
+      if (!isBrowser) return cors(response);
+      const result = new Response(response.body, response);
+      result.headers.set("Cache-Control", "no-store");
+      result.headers.set("X-Content-Type-Options", "nosniff");
+      return result;
+    };
     try {
       if (path === "/healthz")
         return Response.json(
           { ok: true },
           { headers: { "Cache-Control": "no-store" } },
         );
-      if (path === "/api/pings") {
+      if (path === "/api/pings" || isBrowser) {
+        if (
+          isBrowser &&
+          (request.headers.get("Origin") !== new URL(request.url).origin ||
+            request.headers.get("Sec-Fetch-Site") !== "same-origin" ||
+            request.headers.get("Sec-Fetch-Mode") !== "cors")
+        )
+          return respond(
+            error(
+              403,
+              "browser_required",
+              "Use the form on this site, or POST /api/pings for API access.",
+            ),
+          );
         if (request.method === "OPTIONS")
-          return cors(new Response(null, { status: 204 }));
+          return respond(new Response(null, { status: 204 }));
         if (request.method !== "POST") {
           const response = error(
             405,
             "method_not_allowed",
-            "Use POST /api/pings.",
+            `Use POST ${path}.`,
           );
           response.headers.set("Allow", "POST, OPTIONS");
-          return cors(response);
+          return respond(response);
         }
         const submission: Submission = {
           source: await sourceOf(request),
+          channel: isBrowser ? "ui" : "api",
           input: await readInput(request),
         };
         const response = await env.MAP.getByName("world").fetch(
@@ -54,7 +76,7 @@ export default {
         console.log(
           JSON.stringify({ event: "submission", status: response.status }),
         );
-        return cors(response);
+        return respond(response);
       }
       if (isApi)
         return cors(
@@ -88,7 +110,7 @@ export default {
       console.log(
         JSON.stringify({ event: "request_failed", status: response.status }),
       );
-      return isApi ? cors(response) : response;
+      return isApi ? respond(response) : response;
     }
   },
 } satisfies ExportedHandler<Env>;
