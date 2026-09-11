@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Send a ping to HandyMap with one JSON request. Cloudflare Access protects the hosted site."
+      content="Send a ping to HandyMap with one JSON request. Everyone on the map sees it for 60 seconds."
     />
     <meta name="theme-color" content="#101918" />
     <title>API guide — HandyMap</title>
@@ -30,16 +30,16 @@
         A little hello.<br />One simple request<span class="accent">.</span>
       </h1>
       <p class="lead">
-        Send a location and a small story. Cloudflare Access protects the hosted
-        map and API. Sign in before you send a ping.
+        Send a location and a small story. Everyone on the map sees it for 60
+        seconds. No account is needed.
       </p>
       <section aria-labelledby="quick-start">
         <h2 id="quick-start">Send your first ping</h2>
         <p>
-          Send JSON to <code>POST /api/pings</code>. Everyone with access can
-          see your ping. Run the curl example against the local development
-          server. Run the JavaScript example in this page’s browser console
-          after you sign in.
+          Send JSON to <code>POST /api/pings</code>. Everyone on the map can see
+          your ping. Run the curl example against the local development server,
+          or change its URL to the hosted site. Run the JavaScript example in
+          this page’s browser console.
         </p>
         <div class="code-header">
           <span>TERMINAL · LOCAL DEVELOPMENT</span
@@ -133,7 +133,7 @@
         <h2 id="limits">One world. One shared limit.</h2>
         <p>
           The map accepts one ping every 1,000 milliseconds across
-          <strong>all callers</strong>, and one ping per minute from
+          <strong>all callers</strong>, and one ping every 10 seconds from
           <strong>each source address</strong>. It rejects every extra request
           immediately. There is no queue or automatic retry.
         </p>
@@ -160,7 +160,7 @@ Retry-After: 1
         </p>
         <p>
           For <code>source_limited</code>, <code>Retry-After</code> counts down
-          the minute since your last accepted ping. For
+          the 10 seconds since your last accepted ping. For
           <code>daily_limit</code>, <code>Retry-After</code> points to midnight
           UTC. A network failure does not prove rejection: the server can accept
           a ping before the response reaches you.
@@ -196,7 +196,7 @@ Retry-After: 1
               </tr>
               <tr>
                 <td><code>429</code></td>
-                <td>One-second, one-minute, or daily limit</td>
+                <td>One-second, ten-second, or daily limit</td>
               </tr>
               <tr>
                 <td><code>503</code></td>
@@ -213,19 +213,16 @@ Retry-After: 1
         </p>
       </section>
       <section aria-labelledby="shared">
-        <h2 id="shared">A private, temporary space</h2>
+        <h2 id="shared">A shared, temporary space</h2>
         <p>
-          The hosted site uses the existing Cloudflare Access policy. All
-          viewers with access share the same map. There is no archive. Other
-          viewers can copy what they see. External image hosts still receive
-          image requests.
+          Everyone shares the same map. There is no archive, and there are no
+          accounts. Other viewers can copy what they see. External image hosts
+          still receive image requests. Do not send anything private.
         </p>
         <p>
-          The local API supports Cross-Origin Resource Sharing (CORS). The
-          hosted Access gate redirects anonymous requests to login, including
-          API preflight and WebSocket requests. Use the signed-in site for
-          hosted requests. Preflight requests do not consume the shared
-          acceptance slot.
+          The API supports Cross-Origin Resource Sharing (CORS) without
+          credentials, so a script on any site can send a ping. Preflight
+          requests do not consume the shared acceptance slot.
         </p>
         <p>
           This project runs on a free service with finite quotas. Rejected

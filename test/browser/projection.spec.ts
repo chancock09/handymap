@@ -40,16 +40,25 @@ test("uses Equal Earth for high latitude pings and map selections", async ({
         );
       })
       .toBe(true);
+    // The map settles after a viewport change, so poll until the marker sits at the expected point.
+    const markerRatio = async () => {
+      const map = (await page.locator("#world").boundingBox())!;
+      const marker = (await dot.boundingBox())!;
+      return {
+        x: (marker.x + marker.width / 2 - map.x) / map.width,
+        y: (marker.y + marker.height / 2 - map.y) / map.height,
+      };
+    };
+    await expect
+      .poll(async () => {
+        const ratio = await markerRatio();
+        return (
+          Math.abs(ratio.x - 0.2589255894) < 0.0005 &&
+          Math.abs(ratio.y - 0.1553539667) < 0.0005
+        );
+      })
+      .toBe(true);
     const map = (await page.locator("#world").boundingBox())!;
-    const marker = (await dot.boundingBox())!;
-    expect((marker.x + marker.width / 2 - map.x) / map.width).toBeCloseTo(
-      0.2589255894,
-      3,
-    );
-    expect((marker.y + marker.height / 2 - map.y) / map.height).toBeCloseTo(
-      0.1553539667,
-      3,
-    );
     const target = {
       x: Math.round(map.x + map.width * 0.7410744106),
       y: Math.round(map.y + map.height * 0.1553539667),
