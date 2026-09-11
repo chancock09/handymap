@@ -45,7 +45,7 @@ test("uses the current location on mobile and waits for the user to send", async
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
   let requests = 0;
-  await page.route("**/api/pings", (route) => {
+  await page.route("**/api/browser-pings", (route) => {
     requests++;
     expect(route.request().postDataJSON()).toMatchObject({
       latitude: 37.7749,
@@ -173,7 +173,7 @@ test("sends from the mobile map, preserves the draft, and reveals the accepted p
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.route("**/api/pings", (route) =>
+  await page.route("**/api/browser-pings", (route) =>
     route.fulfill({
       status: 201,
       json: { ...ping("accepted"), ...route.request().postDataJSON() },
@@ -257,7 +257,7 @@ test("counts trimmed Unicode code points and focuses field errors before a reque
   page,
 }) => {
   let requests = 0;
-  await page.route("**/api/pings", (route) => {
+  await page.route("**/api/browser-pings", (route) => {
     requests++;
     return route.fulfill({
       status: 201,
@@ -350,7 +350,7 @@ test("waits for the server retry interval without an automatic submission", asyn
 }) => {
   await page.clock.install();
   let requests = 0;
-  await page.route("**/api/pings", (route) => {
+  await page.route("**/api/browser-pings", (route) => {
     requests++;
     return route.fulfill({
       status: 429,
@@ -382,7 +382,7 @@ test("shows the daily reset in local time and preserves unconfirmed requests", a
 }) => {
   await page.clock.install();
   let requests = 0;
-  await page.route("**/api/pings", (route) => {
+  await page.route("**/api/browser-pings", (route) => {
     requests++;
     if (requests > 1) return route.abort();
     return route.fulfill({
@@ -455,7 +455,7 @@ test("expires the accepted ping without leaving focus on a disabled view action"
   page,
 }) => {
   await page.clock.install();
-  await page.route("**/api/pings", (route) =>
+  await page.route("**/api/browser-pings", (route) =>
     route.fulfill({
       status: 201,
       json: { ...ping("short", 0, 5000), ...route.request().postDataJSON() },

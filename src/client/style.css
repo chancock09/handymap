@@ -17,7 +17,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 16px 32px;
+  padding: 12px 32px;
   border-bottom: 1px solid var(--line);
   flex: none;
 }
@@ -45,26 +45,33 @@
 .map-heading {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 20px;
-  padding: 24px 32px 8px;
+  padding: 16px 32px 8px;
   flex: none;
 }
 .map-heading h1 {
   max-width: 36ch;
-  font-size: clamp(20px, 2.3vw, 28px);
-  font-weight: 500;
+  font-size: clamp(24px, 2.7vw, 36px);
+  font-weight: 600;
   letter-spacing: -0.8px;
   margin: 0;
   line-height: 1.25;
 }
+.map-intro p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
 .map-stage {
+  position: relative;
   display: grid;
   place-items: center;
   flex: 1;
   min-height: 0;
   min-width: 0;
-  margin: 0 24px;
+  margin: 0 6px;
   overflow: hidden;
 }
 .map-credit {
@@ -91,7 +98,11 @@
   box-shadow: 0 8px 24px #0003;
 }
 .fullscreen-button {
-  background: transparent;
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 3;
+  background: var(--bg);
   color: var(--muted);
   font-size: 12px;
   border: 1px solid var(--line);
@@ -161,19 +172,20 @@
   cursor: crosshair;
 }
 .land {
-  fill: #2e4641;
-  stroke: #142321;
+  fill: #50796b;
+  stroke: #213b33;
   stroke-width: 0.65;
 }
 .graticule {
   fill: none;
   stroke: #8fbaab;
   stroke-width: 0.45;
-  opacity: 0.05;
+  opacity: 0.16;
 }
 .sphere {
-  fill: none;
-  stroke: none;
+  fill: #192c28;
+  stroke: #36574c;
+  stroke-width: 0.75;
 }
 .dots {
   position: absolute;
@@ -493,25 +505,34 @@ textarea {
     display: contents;
   }
   .header-actions nav {
-    order: 3;
+    order: 2;
+    margin-left: auto;
   }
   .header-actions nav a {
     font-size: 12px;
   }
   .header-actions .live-status {
-    order: 2;
-    flex-basis: calc(100% - 100px);
+    order: 1;
+    margin-left: auto;
     font-size: 11px;
   }
   .presence {
     font-size: 12px;
   }
   .map-heading {
-    padding: 20px 18px 8px;
-    gap: 12px;
+    padding: 18px 18px 8px;
+    gap: 16px;
+    align-items: stretch;
+    flex-direction: column;
   }
   .map-heading h1 {
-    max-width: 240px;
+    font-size: clamp(22px, 5.8vw, 30px);
+    max-width: none;
+  }
+  .map-intro p {
+    max-width: 32ch;
+    font-size: 13px;
+    margin-top: 6px;
   }
   .map-stage {
     margin-inline: 4px;
@@ -536,9 +557,15 @@ textarea {
   }
   .map-heading {
     padding-block: 8px 0;
+    flex-direction: row;
+    align-items: center;
   }
   .map-heading h1 {
     font-size: 18px;
+  }
+  .map-intro p {
+    margin-top: 4px;
+    font-size: 12px;
   }
   .map-credit {
     margin-block: 2px 4px;

@@ -53,15 +53,15 @@ test("uses Equal Earth for high latitude pings and map selections", async ({
       .poll(async () => {
         const ratio = await markerRatio();
         return (
-          Math.abs(ratio.x - 0.2589255894) < 0.0005 &&
-          Math.abs(ratio.y - 0.1553539667) < 0.0005
+          Math.abs(ratio.x - 0.2518942524) < 0.0005 &&
+          Math.abs(ratio.y - 0.1453017907) < 0.0005
         );
       })
       .toBe(true);
     const map = (await page.locator("#world").boundingBox())!;
     const target = {
-      x: Math.round(map.x + map.width * 0.7410744106),
-      y: Math.round(map.y + map.height * 0.1553539667),
+      x: Math.round(map.x + map.width * 0.7481057476),
+      y: Math.round(map.y + map.height * 0.1453017907),
     };
     await page.mouse.click(target.x, target.y);
     await expect(page.locator("#composer-dialog")).toBeVisible();

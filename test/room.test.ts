@@ -140,3 +140,40 @@ it("counts viewers without a valid browser identifier separately", async () => {
   expect(await other.next("snapshot")).toMatchObject({ viewers: 2 });
   expect(await first.next("presence")).toMatchObject({ viewers: 2 });
 });
+
+it("retains duplicate hashes after payload expiry, then clears them and stops the alarm", async () => {
+  const now = Date.now();
+  const acceptedAt = now - 61_000;
+  await setState({
+    pings: [pingAt(acceptedAt)],
+    sources: { source: acceptedAt },
+    fingerprints: { content: acceptedAt, expired: now - 300_000 },
+  });
+  await runInDurableObject(stub(), async (_instance, ctx) => {
+    await ctx.storage.setAlarm(now);
+  });
+  await runDurableObjectAlarm(stub());
+  await runInDurableObject(stub(), async (_instance, ctx) => {
+    expect(await ctx.storage.get("state")).toMatchObject({
+      pings: [],
+      sources: {},
+      fingerprints: { content: acceptedAt },
+    });
+    expect(await ctx.storage.getAlarm()).toBe(acceptedAt + 300_000);
+  });
+  await setState({ fingerprints: { content: now - 300_000 } });
+  await runDurableObjectAlarm(stub());
+  await runInDurableObject(stub(), async (_instance, ctx) => {
+    expect(await ctx.storage.get("state")).toMatchObject({ fingerprints: {} });
+    expect(await ctx.storage.getAlarm()).toBeNull();
+  });
+});
+
+it("does not postpone an older duplicate expiry when a new ping arrives", async () => {
+  const acceptedAt = Date.now() - 290_000;
+  await setState({ fingerprints: { older: acceptedAt } });
+  expect((await post()).status).toBe(201);
+  await runInDurableObject(stub(), async (_instance, ctx) => {
+    expect(await ctx.storage.getAlarm()).toBe(acceptedAt + 300_000);
+  });
+});

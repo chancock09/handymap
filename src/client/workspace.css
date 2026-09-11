@@ -12,8 +12,12 @@
 .map-panel .compose-entry {
   width: auto;
   margin: 0;
-  gap: 20px;
-  padding: 12px 18px;
+  gap: 28px;
+  padding: 16px 24px;
+  min-height: 54px;
+  flex-shrink: 0;
+  font-size: 16px;
+  box-shadow: 0 4px 24px #b8ef981a;
 }
 .secondary-button {
   min-height: 44px;
@@ -156,8 +160,17 @@ body.composer-open {
     border-radius: 14px;
   }
   .map-panel .compose-entry {
-    font-size: 13px;
+    width: 100%;
+    font-size: 15px;
     gap: 14px;
-    padding: 10px 14px;
+    padding: 14px 18px;
+  }
+}
+
+@media (max-height: 500px) {
+  .map-panel .compose-entry {
+    width: auto;
+    min-height: 44px;
+    padding: 10px 18px;
   }
 }

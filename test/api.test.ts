@@ -58,27 +58,35 @@ it("rejects at 999 milliseconds and accepts at exactly 1000 without a fixed-wind
     pings: [],
     sources: {},
   };
-  expect(decideAcceptance(state, time + 999, 10_000, "a")).toMatchObject({
+  expect(decideAcceptance(state, time + 999, 10_000, "a", "ui")).toMatchObject({
     code: "rate_limited",
     retryAfterMs: 1,
   });
-  expect(decideAcceptance(state, time + 1000, 10_000, "a")).toEqual({
+  expect(decideAcceptance(state, time + 1000, 10_000, "a", "ui")).toEqual({
     day: "2026-09-10",
     count: 2,
   });
 });
 
-it("accepts one ping every ten seconds from each source", async () => {
+it("accepts one API ping every minute from each source", async () => {
   expect((await post()).status).toBe(201);
   const repeat = await post();
   expect(repeat.status).toBe(429);
-  expect(repeat.headers.get("Retry-After")).toBe("10");
+  expect(repeat.headers.get("Retry-After")).toBe("60");
   expect(await repeat.json()).toMatchObject({
     error: { code: "source_limited", retryAfterMs: expect.any(Number) },
   });
-  await setState({ lastAcceptedAt: Date.now() - 2000 });
-  expect((await post(input, other)).status).toBe(201);
-  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  await setState({
+    lastAcceptedAt: Date.now() - 6000,
+    lastApiAcceptedAt: Date.now() - 6000,
+  });
+  expect(
+    (await post({ ...input, title: "Another signal" }, other)).status,
+  ).toBe(201);
+  await setState({
+    lastAcceptedAt: Date.now() - 6000,
+    lastApiAcceptedAt: Date.now() - 6000,
+  });
   expect((await post()).status).toBe(429);
 });
 
@@ -91,24 +99,29 @@ it("rejects a source at 9,999 milliseconds and accepts it at exactly 10,000", ()
     pings: [],
     sources: { a: time },
   };
-  expect(decideAcceptance(state, time + 9_999, 10_000, "a")).toMatchObject({
+  expect(
+    decideAcceptance(state, time + 9_999, 10_000, "a", "ui"),
+  ).toMatchObject({
     code: "source_limited",
     retryAfterMs: 1,
   });
-  expect(decideAcceptance(state, time + 10_000, 10_000, "a")).toEqual({
+  expect(decideAcceptance(state, time + 10_000, 10_000, "a", "ui")).toEqual({
     day: "2026-09-10",
     count: 2,
   });
-  expect(decideAcceptance(state, time + 1000, 10_000, "b")).toEqual({
+  expect(decideAcceptance(state, time + 1000, 10_000, "b", "ui")).toEqual({
     day: "2026-09-10",
     count: 2,
   });
 });
 
-it("keeps the source limit after eviction and forgets sources after ten seconds", async () => {
+it("keeps the API source limit after eviction and forgets sources after one minute", async () => {
   await post();
   await evictDurableObject(stub());
-  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  await setState({
+    lastAcceptedAt: Date.now() - 6000,
+    lastApiAcceptedAt: Date.now() - 6000,
+  });
   expect(await (await post()).json()).toMatchObject({
     error: { code: "source_limited" },
   });
@@ -120,13 +133,13 @@ it("keeps the source limit after eviction and forgets sources after ten seconds"
     expect(key).toMatch(/^[0-9a-f]{32}$/);
     expect(key).not.toContain(address);
     stored!.sources = {
-      [key]: Date.now() - 10_000,
-      stale: Date.now() - 11_000,
+      [key]: Date.now() - 60_000,
+      stale: Date.now() - 61_000,
     };
     await state.storage.put("state", stored);
   });
   await evictDurableObject(stub());
-  expect((await post()).status).toBe(201);
+  expect((await post({ ...input, title: "Fresh content" })).status).toBe(201);
   await runInDurableObject(stub(), async (_instance, state) => {
     const stored = await state.storage.get<{ sources: Record<string, number> }>(
       "state",
@@ -137,11 +150,16 @@ it("keeps the source limit after eviction and forgets sources after ten seconds"
 
 it("shares one source bucket among requests without a client address", async () => {
   expect((await post(input, "")).status).toBe(201);
-  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  await setState({
+    lastAcceptedAt: Date.now() - 6000,
+    lastApiAcceptedAt: Date.now() - 6000,
+  });
   expect(await (await post(input, "")).json()).toMatchObject({
     error: { code: "source_limited" },
   });
-  expect((await post(input, other)).status).toBe(201);
+  expect(
+    (await post({ ...input, title: "Another signal" }, other)).status,
+  ).toBe(201);
 });
 
 it("keeps the one-second limit and daily count after eviction", async () => {
@@ -151,7 +169,8 @@ it("keeps the one-second limit and daily count after eviction", async () => {
     error: { code: "rate_limited" },
   });
   await setState({
-    lastAcceptedAt: Date.now() - 2000,
+    lastAcceptedAt: Date.now() - 6000,
+    lastApiAcceptedAt: Date.now() - 6000,
     day: new Date().toISOString().slice(0, 10),
     count: 10_000,
   });
@@ -162,7 +181,9 @@ it("keeps the one-second limit and daily count after eviction", async () => {
     error: { code: "daily_limit" },
   });
   await setState({ day: "2000-01-01" });
-  expect((await post(input, other)).status).toBe(201);
+  expect(
+    (await post({ ...input, title: "Another signal" }, other)).status,
+  ).toBe(201);
 });
 
 it("resets the daily count at midnight while retaining the one-second spacing", () => {
@@ -174,11 +195,11 @@ it("resets the daily count at midnight while retaining the one-second spacing", 
     pings: [],
     sources: {},
   };
-  expect(decideAcceptance(state, midnight, 10_000, "a")).toMatchObject({
+  expect(decideAcceptance(state, midnight, 10_000, "a", "ui")).toMatchObject({
     code: "rate_limited",
     retryAfterMs: 500,
   });
-  expect(decideAcceptance(state, midnight + 500, 10_000, "a")).toEqual({
+  expect(decideAcceptance(state, midnight + 500, 10_000, "a", "ui")).toEqual({
     day: "2026-09-11",
     count: 1,
   });
@@ -319,4 +340,168 @@ it("rejects invalid UTF-8 rather than silently replacing it", async () => {
     status: 400,
     code: "invalid_json",
   });
+});
+
+const browserHeaders = {
+  Origin: "https://handymap.test",
+  "Sec-Fetch-Site": "same-origin",
+  "Sec-Fetch-Mode": "cors",
+};
+
+it.each([
+  [browserHeaders, 201],
+  [{}, 403],
+  [{ ...browserHeaders, Origin: "https://another.test" }, 403],
+  [{ ...browserHeaders, "Sec-Fetch-Site": "cross-site" }, 403],
+  [{ ...browserHeaders, "Sec-Fetch-Mode": "" }, 403],
+  [{ Origin: "https://handymap.test" }, 403],
+] as const)(
+  "gates the browser route with same-origin fetch metadata: %j",
+  async (headers, status) => {
+    const response = await post(input, address, headers, "/api/browser-pings");
+    expect(response.status).toBe(status);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    if (status === 403) expect((await post()).status).toBe(201);
+  },
+);
+
+it("keeps API limits when a caller supplies browser headers and a channel field", async () => {
+  await post();
+  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  const response = await post(
+    { ...input, title: "A new moment", channel: "ui" },
+    address,
+    browserHeaders,
+  );
+  expect(response.status).toBe(429);
+  expect(await response.json()).toMatchObject({
+    error: { code: "source_limited", retryAfterMs: expect.any(Number) },
+  });
+  expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(50);
+});
+
+it("keeps API spacing separate from browser use and shares the daily cap", async () => {
+  await post();
+  await setState({ lastAcceptedAt: Date.now() - 2000 });
+  const api = await post({ ...input, title: "API update" }, other);
+  expect(await api.json()).toMatchObject({
+    error: { code: "api_rate_limited" },
+  });
+  expect(
+    (
+      await post(
+        { ...input, title: "Browser update" },
+        other,
+        browserHeaders,
+        "/api/browser-pings",
+      )
+    ).status,
+  ).toBe(201);
+  await setState({ lastAcceptedAt: Date.now() - 2000, count: 10_000 });
+  expect(
+    await (
+      await post(
+        { ...input, title: "Over the cap" },
+        "192.0.2.4",
+        browserHeaders,
+        "/api/browser-pings",
+      )
+    ).json(),
+  ).toMatchObject({ error: { code: "daily_limit" } });
+});
+
+it("enforces exact API boundaries across midnight", () => {
+  const time = Date.parse("2026-09-10T23:59:59Z");
+  const state = {
+    lastAcceptedAt: time,
+    lastApiAcceptedAt: time,
+    day: "2026-09-10",
+    count: 10_000,
+    pings: [],
+    sources: { a: time },
+  };
+  expect(
+    decideAcceptance(state, time + 4999, 10_000, "b", "api"),
+  ).toMatchObject({ code: "api_rate_limited", retryAfterMs: 1 });
+  expect(decideAcceptance(state, time + 5000, 10_000, "b", "api")).toEqual({
+    day: "2026-09-11",
+    count: 1,
+  });
+  expect(
+    decideAcceptance(state, time + 59_999, 10_000, "a", "api"),
+  ).toMatchObject({ code: "source_limited", retryAfterMs: 1 });
+  expect(decideAcceptance(state, time + 60_000, 10_000, "a", "api")).toEqual({
+    day: "2026-09-11",
+    count: 1,
+  });
+  expect(decideAcceptance(state, time + 10_000, 10_000, "a", "ui")).toEqual({
+    day: "2026-09-11",
+    count: 1,
+  });
+});
+
+it("blocks normalized duplicate content across sources and channels after eviction", async () => {
+  expect((await post()).status).toBe(201);
+  await setState({
+    lastAcceptedAt: Date.now() - 6000,
+    lastApiAcceptedAt: Date.now() - 6000,
+  });
+  await evictDurableObject(stub());
+  const duplicate = {
+    ...input,
+    title: "  ＨＥＬＬＯ  ",
+    message: "A   SMALL\nsignal.",
+    latitude: 45,
+    longitude: 90,
+    imageUrl: "https://example.com/new.png",
+  };
+  for (const headers of [{}, browserHeaders]) {
+    const response = await post(
+      duplicate,
+      other,
+      headers,
+      headers === browserHeaders ? "/api/browser-pings" : "/api/pings",
+    );
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get("Retry-After"))).toBeGreaterThan(290);
+    expect(await response.json()).toMatchObject({
+      error: { code: "duplicate_content" },
+    });
+  }
+  await runInDurableObject(stub(), async (_instance, ctx) => {
+    const state = (await ctx.storage.get<{
+      lastAcceptedAt: number;
+      lastApiAcceptedAt: number;
+      count: number;
+      sources: Record<string, number>;
+      fingerprints: Record<string, number>;
+    }>("state"))!;
+    expect(state.count).toBe(1);
+    expect(Object.keys(state.sources)).toHaveLength(1);
+    expect(Object.keys(state.fingerprints)).toEqual([
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+    ]);
+  });
+  expect(
+    (await post({ ...input, message: "A different moment." }, other)).status,
+  ).toBe(201);
+});
+
+it("expires duplicate limits at exactly five minutes without resetting them on rejection", () => {
+  const time = Date.parse("2026-09-10T12:00:00Z");
+  const state = {
+    lastAcceptedAt: time,
+    day: "2026-09-10",
+    count: 1,
+    pings: [],
+    sources: {},
+    fingerprints: { content: time },
+  };
+  expect(
+    decideAcceptance(state, time + 299_999, 10_000, "a", "api", "content"),
+  ).toMatchObject({ code: "duplicate_content", retryAfterMs: 1 });
+  expect(
+    decideAcceptance(state, time + 300_000, 10_000, "a", "api", "content"),
+  ).toEqual({ day: "2026-09-10", count: 2 });
 });

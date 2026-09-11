@@ -223,7 +223,7 @@ export function setupComposer(callbacks: {
     status.textContent = "Sending your ping…";
     const imageUrl = field("imageUrl").value.trim();
     try {
-      const response = await fetch("/api/pings", {
+      const response = await fetch("/api/browser-pings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

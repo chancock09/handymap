@@ -18,13 +18,19 @@ afterEach(async () => {
   await reset();
 });
 export const address = "203.0.113.10";
-export async function post(payload: unknown = input, source = address) {
-  const response = await SELF.fetch("https://handymap.test/api/pings", {
+export async function post(
+  payload: unknown = input,
+  source = address,
+  headers: Record<string, string> = {},
+  path = "/api/pings",
+) {
+  const response = await SELF.fetch(`https://handymap.test${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Origin: "https://another.test",
       ...(source ? { "CF-Connecting-IP": source } : {}),
+      ...headers,
     },
     body: JSON.stringify(payload),
   });

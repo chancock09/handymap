@@ -36,6 +36,14 @@
           <nav aria-label="Main">
             <a href="/docs">API guide <span aria-hidden="true">↗</span></a>
           </nav>
+        </div>
+      </header>
+      <section class="map-scene" aria-labelledby="map-title">
+        <div class="map-heading">
+          <div class="map-intro">
+            <h1 id="map-title">A little hello. A whole world.</h1>
+            <p>Pick a spot. Share a moment. It’s here for 60 seconds.</p>
+          </div>
           <button
             id="open-composer"
             class="primary-button compose-entry"
@@ -45,12 +53,7 @@
             Send a ping <span aria-hidden="true">↗</span>
           </button>
         </div>
-      </header>
-      <section class="map-scene" aria-labelledby="map-title">
-        <div class="map-heading">
-          <h1 id="map-title">
-            Click anywhere on the map to share a live update with everyone here.
-          </h1>
+        <div id="map-stage" class="map-stage">
           <button
             id="fullscreen"
             class="fullscreen-button"
@@ -60,8 +63,6 @@
           >
             Full screen
           </button>
-        </div>
-        <div id="map-stage" class="map-stage">
           <div id="map" class="world-map">
             <svg
               id="world"
