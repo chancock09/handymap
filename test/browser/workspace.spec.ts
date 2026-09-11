@@ -37,6 +37,138 @@ async function fillForm(page: Page) {
     .fill("Hello world.");
 }
 
+test("uses the current location on mobile and waits for the user to send", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
+  let requests = 0;
+  await page.route("**/api/pings", (route) => {
+    requests++;
+    expect(route.request().postDataJSON()).toMatchObject({
+      latitude: 37.7749,
+      longitude: -122.4194,
+      title: "Hello from here",
+      message: "My draft stays here.",
+    });
+    return route.fulfill({
+      status: 201,
+      json: { ...ping("current-location"), ...route.request().postDataJSON() },
+    });
+  });
+  await openMap(page);
+  await fillForm(page);
+  await page.locator("#title").fill("Hello from here");
+  await page.locator("#message").fill("My draft stays here.");
+  await page.locator("#change-location").click();
+  await expect(
+    page.getByRole("button", { name: "Use my location" }),
+  ).toBeInViewport();
+  await page.getByRole("button", { name: "Use my location" }).click();
+  await expect(page.locator("#title")).toBeFocused();
+  await expect(page.locator("#change-location")).toContainText(
+    "37.7749, -122.4194",
+  );
+  await expect(page.locator("#selection")).toBeVisible();
+  await expect(page.locator("#title")).toHaveValue("Hello from here");
+  await expect(page.locator("#message")).toHaveValue("My draft stays here.");
+  expect(requests).toBe(0);
+  await page.locator("#send").click();
+  await expect(page.locator("#card-title")).toHaveText("Hello from here");
+  expect(requests).toBe(1);
+});
+
+for (const [code, message] of [
+  [1, "Location access was denied."],
+  [2, "Your location is unavailable."],
+  [3, "The location request timed out."],
+] as const) {
+  test(`keeps manual coordinates available after location error ${code}`, async ({
+    page,
+  }) => {
+    await page.addInitScript((code) => {
+      navigator.geolocation.getCurrentPosition = (_success, failure) => {
+        failure?.({ code } as GeolocationPositionError);
+      };
+    }, code);
+    await openMap(page);
+    await page.locator("#open-composer").click();
+    await page.getByRole("button", { name: "Use my location" }).click();
+    await expect(page.locator("#location-status")).toContainText(message);
+    await expect(page.locator("#use-location")).toBeEnabled();
+    await page.locator("#latitude").fill("0");
+    await page.locator("#longitude").fill("0");
+    await page.locator("#continue-story").click();
+    await expect(page.locator("#title")).toBeFocused();
+  });
+}
+
+test("explains when location access is unsupported", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "geolocation", { value: undefined });
+  });
+  await openMap(page);
+  await page.locator("#open-composer").click();
+  await page.locator("#use-location").click();
+  await expect(page.locator("#location-status")).toContainText(
+    "This browser does not support location access.",
+  );
+  await expect(page.locator("#pick-location")).toBeEnabled();
+});
+
+for (const action of ["close", "manual"] as const) {
+  test(`ignores a late location result after ${action}`, async ({ page }) => {
+    await page.addInitScript(() => {
+      navigator.geolocation.getCurrentPosition = (success) => {
+        window.addEventListener(
+          "location-result",
+          () => {
+            success({
+              coords: { latitude: 37.7749, longitude: -122.4194 },
+            } as GeolocationPosition);
+          },
+          { once: true },
+        );
+      };
+    });
+    await openMap(page);
+    await page.locator("#open-composer").click();
+    await page.locator("#use-location").click();
+    await expect(page.locator("#use-location")).toBeDisabled();
+    await expect(page.locator("#location-status")).toContainText(
+      "Allow location access",
+    );
+    if (action === "close") {
+      await page.keyboard.press("Escape");
+      await page.locator("#open-composer").click();
+    } else {
+      await page.locator("#latitude").fill("10");
+      await page.locator("#longitude").fill("20");
+    }
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("location-result")),
+    );
+    await expect(page.locator("#location-step")).toBeVisible();
+    await expect(page.locator("#latitude")).toHaveValue(
+      action === "close" ? "" : "10",
+    );
+    await expect(page.locator("#longitude")).toHaveValue(
+      action === "close" ? "" : "20",
+    );
+    await expect(page.locator("#use-location")).toBeEnabled();
+    await page.locator("#use-location").click();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("location-result")),
+    );
+    await expect(page.locator("#title")).toBeFocused();
+    await expect(page.locator("#change-location")).toContainText(
+      "37.7749, -122.4194",
+    );
+  });
+}
+
 test("sends from the mobile map, preserves the draft, and reveals the accepted ping", async ({
   page,
 }) => {
