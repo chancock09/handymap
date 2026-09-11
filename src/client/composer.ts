@@ -11,6 +11,9 @@ export function setupComposer(callbacks: {
   const form = get<HTMLFormElement>("ping-form");
   const button = get<HTMLButtonElement>("send");
   const status = get("form-status");
+  const locationButton = get<HTMLButtonElement>("use-location");
+  const locationStatus = get("location-status");
+  let locationRequest = 0;
   let step: "location" | "story" = "location";
   let returnFocus: HTMLElement = get("open-composer");
   let pending = false;
@@ -56,6 +59,7 @@ export function setupComposer(callbacks: {
   }
 
   function showStep(next: typeof step) {
+    cancelLocation();
     step = next;
     get("location-step").hidden = step !== "location";
     get("story-step").hidden = step !== "story";
@@ -81,6 +85,7 @@ export function setupComposer(callbacks: {
   }
 
   function close(restore = true) {
+    cancelLocation();
     dialog.close();
     document.body.classList.remove("composer-open");
     if (restore) returnFocus.focus({ preventScroll: true });
@@ -120,6 +125,50 @@ export function setupComposer(callbacks: {
   get("enter-coordinates").addEventListener("click", () =>
     field("latitude").focus(),
   );
+  function cancelLocation() {
+    locationRequest++;
+    locationButton.disabled = false;
+    locationButton.textContent = "Use my location";
+    locationStatus.textContent = "";
+  }
+
+  locationButton.addEventListener("click", () => {
+    cancelLocation();
+    const request = locationRequest;
+    locationStatus.dataset.error = "false";
+    const fail = (message: string) => {
+      if (request !== locationRequest) return;
+      cancelLocation();
+      locationStatus.dataset.error = "true";
+      locationStatus.textContent = `${message} Pick on the map or enter coordinates.`;
+    };
+    if (!navigator.geolocation) {
+      fail("This browser does not support location access.");
+      return;
+    }
+    locationButton.disabled = true;
+    locationButton.textContent = "Finding your location…";
+    locationStatus.textContent =
+      "Allow location access when your browser asks.";
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (request !== locationRequest) return;
+        field("latitude").value = coords.latitude.toFixed(4);
+        field("longitude").value = coords.longitude.toFixed(4);
+        continueStory();
+      },
+      (error) => {
+        fail(
+          error.code === 1
+            ? "Location access was denied."
+            : error.code === 3
+              ? "The location request timed out. Try again."
+              : "Your location is unavailable. Try again.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
+  });
   const continueStory = () => {
     if (validate(["latitude", "longitude"])) {
       callbacks.selectLocation();
@@ -135,6 +184,7 @@ export function setupComposer(callbacks: {
 
   for (const id of ["latitude", "longitude", "title", "message", "imageUrl"]) {
     field(id).addEventListener("input", () => {
+      if (id === "latitude" || id === "longitude") cancelLocation();
       if (id === "title" || id === "message") {
         const length = [...field(id).value.trim()].length;
         const max = id === "title" ? 80 : 160;

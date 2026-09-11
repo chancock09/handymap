@@ -183,6 +183,14 @@
               <legend>01 <span>Choose a location</span></legend>
               <div class="location-methods">
                 <button
+                  id="use-location"
+                  class="secondary-button"
+                  type="button"
+                  aria-describedby="location-status"
+                >
+                  Use my location
+                </button>
+                <button
                   id="pick-location"
                   class="secondary-button"
                   type="button"
@@ -197,6 +205,7 @@
                   Enter coordinates
                 </button>
               </div>
+              <p id="location-status" class="form-status" role="status"></p>
               <div class="coordinate-fields">
                 <div>
                   <label for="latitude">Latitude</label>

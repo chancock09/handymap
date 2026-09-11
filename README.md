@@ -14,6 +14,8 @@ The header shows how many other visitors are online. When no one else is online,
 The count uses connected browsers. Tabs in one browser share a local identifier and count once when local storage is available.
 Separate browsers count separately. The site clears the count when its live connection stops.
 Use **Send a ping** to open the form and enter coordinates manually.
+Select **Use my location** to ask the browser for your current location and open the story form.
+If the browser cannot find your location, select a point on the map or enter coordinates.
 The form keeps your draft when you close it. An accepted ping opens on the map.
 The map fills the available screen. **Live feed** shows active pings in a horizontal ticker at the bottom.
 Each ticker item shows the title and one line of the message, which has a 160-character limit.
