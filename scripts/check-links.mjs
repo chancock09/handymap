@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-const allowed = new Set(["handymap.gobbi.tech"]);
+const allowed = new Set(["hello-world.gobbi.tech"]);
 async function check(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import https from "node:https";
 
-const origin = new URL(process.argv[2] ?? "https://handymap.gobbi.tech");
+const origin = new URL(process.argv[2] ?? "https://hello-world.gobbi.tech");
 assert.equal(origin.protocol, "https:");
 const checks = [
   { path: "/", status: 200 },

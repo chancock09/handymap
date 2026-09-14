@@ -1,6 +1,6 @@
-# HandyMap
+# Hello World
 
-[HandyMap](https://handymap.gobbi.tech) is a live world map for small, shared signals.
+[Hello World](https://hello-world.gobbi.tech) is a live world map for small, shared signals.
 Anyone can open it, and anyone can send a ping with one JSON request or the form on the page.
 A ping has a location, a title, a sentence, and an optional image URL.
 It appears on every open map at once, pulses for two seconds, and disappears after 60 seconds.
@@ -28,7 +28,7 @@ The form shows text limits, field errors, and the server's retry delay. It does 
 
 The site and API are public. Do not send anything private; everyone on the map sees it.
 
-Read the [API guide](https://handymap.gobbi.tech/docs) for examples and error responses.
+Read the [API guide](https://hello-world.gobbi.tech/docs) for examples and error responses.
 
 ## Run locally
 
@@ -120,7 +120,7 @@ The map uses D3's [Equal Earth projection](https://d3js.org/d3-geo/cylindrical#g
 Country outlines, ping positions, and map selections use the same projection.
 The map does not request external tiles, fonts, or scripts.
 A browser loads an external image only when its card opens, without a referrer.
-The image host receives that browser request. HandyMap does not fetch or store image bytes.
+The image host receives that browser request. Hello World does not fetch or store image bytes.
 
 The Worker serves `/api/*`, `/ws`, and `/healthz`.
 Cloudflare serves other paths as static assets without Worker execution.
