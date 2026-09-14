@@ -35,7 +35,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Check public access before deployment
-        run: npm run smoke
+        run: npm run smoke -- --before-deploy
       - run: npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

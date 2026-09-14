@@ -21,6 +21,7 @@
         ></a
       >
       <nav aria-label="Main">
+        <a href="/history">History</a>
         <a href="/">Back to the map <span aria-hidden="true">↗</span></a>
       </nav>
     </header>
@@ -230,12 +231,50 @@ Retry-After: 5
           shell and this guide remain static.
         </p>
       </section>
-      <section aria-labelledby="shared">
-        <h2 id="shared">A shared, temporary space</h2>
+      <section aria-labelledby="history">
+        <h2 id="history">Read the ping history</h2>
         <p>
-          Everyone shares the same map. There is no archive, and there are no
-          accounts. Other viewers can copy what they see. External image hosts
-          still receive image requests. Do not send anything private.
+          <a href="/history">Search the last 3,600 pings</a>, newest first. A
+          ping leaves the map after 60 seconds. It stays in the public log until
+          3,600 newer pings replace it.
+        </p>
+        <p>
+          Send <code>GET /api/history?q=hello&amp;limit=50</code>. The response
+          contains <code>{ pings, total, next, serverTime }</code>. Each ping
+          has the same fields as the submission response.
+          <code>total</code> counts all current matches, before pagination.
+          <code>serverTime</code> uses Unix milliseconds.
+        </p>
+        <p>
+          Send the <code>next</code> cursor as <code>before</code>, with the
+          same query, to read older matches. A <code>null</code> cursor means no
+          older matches remain. New pings do not repeat rows on older pages. The
+          retention limit can remove rows between requests.
+        </p>
+        <p>
+          <code>q</code> accepts up to 240 Unicode code points. Search ignores
+          case, whitespace differences, and equivalent Unicode forms. Every word
+          must appear in the title or message. Search matches inside words.
+        </p>
+        <p>
+          <code>limit</code> defaults to 50 and accepts integers from 1 through
+          200. <code>before</code> accepts a positive integer cursor. Invalid,
+          unknown, or repeated parameters return <code>400 invalid_query</code>.
+        </p>
+        <p>
+          The endpoint supports public CORS with
+          <code>GET, HEAD, OPTIONS</code>. Responses use
+          <code>Cache-Control: no-store</code>. History starts empty on the
+          first deployment. Reload the history page to see newer pings.
+        </p>
+      </section>
+      <section aria-labelledby="shared">
+        <h2 id="shared">A shared, public space</h2>
+        <p>
+          Everyone shares the same map and public history. There are no
+          accounts. Ping text stays public until 3,600 newer pings replace it.
+          Other viewers can copy what they see. External image hosts still
+          receive image requests. Do not send anything private.
         </p>
         <p>
           The API supports Cross-Origin Resource Sharing (CORS) without

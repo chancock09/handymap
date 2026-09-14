@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
 import https from "node:https";
 
-const origin = new URL(process.argv[2] ?? "https://hello-world.gobbi.tech");
+const origin = new URL(
+  process.argv.slice(2).find((arg) => arg !== "--before-deploy") ??
+    "https://hello-world.gobbi.tech",
+);
 assert.equal(origin.protocol, "https:");
 const checks = [
   { path: "/", status: 200 },
   { path: "/docs", status: 200 },
+  ...(process.argv.includes("--before-deploy")
+    ? []
+    : [
+        { path: "/history", status: 200 },
+        { path: "/api/history?limit=1", status: 200 },
+        { path: "/api/history?q=smoke&limit=1", status: 200 },
+        { path: "/api/history", method: "OPTIONS", status: 204 },
+      ]),
   { path: "/favicon.svg", status: 200 },
   { path: "/healthz", status: 200 },
   {

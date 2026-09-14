@@ -1,5 +1,6 @@
 import { cors, error, readInput, RequestError } from "./http";
 import type { MapRoom, Submission } from "./room";
+import { readHistoryQuery } from "./history";
 export { MapRoom } from "./room";
 
 // Pings are keyed by a hash of the client address so the room never stores raw IPs.
@@ -26,8 +27,15 @@ export default {
     const path = new URL(request.url).pathname;
     const isApi = path.startsWith("/api/");
     const isBrowser = path === "/api/browser-pings";
+    const isHistory = path === "/api/history";
     const respond = (response: Response) => {
-      if (!isBrowser) return cors(response);
+      if (!isBrowser) {
+        const result = cors(
+          response,
+          isHistory ? "GET, HEAD, OPTIONS" : undefined,
+        );
+        return request.method === "HEAD" ? new Response(null, result) : result;
+      }
       const result = new Response(response.body, response);
       result.headers.set("Cache-Control", "no-store");
       result.headers.set("X-Content-Type-Options", "nosniff");
@@ -39,6 +47,25 @@ export default {
           { ok: true },
           { headers: { "Cache-Control": "no-store" } },
         );
+      if (isHistory) {
+        if (request.method === "OPTIONS")
+          return respond(new Response(null, { status: 204 }));
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          const response = error(
+            405,
+            "method_not_allowed",
+            "Use GET /api/history.",
+          );
+          response.headers.set("Allow", "GET, HEAD, OPTIONS");
+          return respond(response);
+        }
+        readHistoryQuery(new URL(request.url));
+        return respond(
+          await env.MAP.getByName("world").fetch(request.url, {
+            method: "GET",
+          }),
+        );
+      }
       if (path === "/api/pings" || isBrowser) {
         if (
           isBrowser &&
