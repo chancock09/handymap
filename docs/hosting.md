@@ -23,7 +23,7 @@ Keep credentials outside this repository and public build output.
 ## Deploy and verify
 
 1. Run `npm ci`, `npm run check`, and `npm run test:browser`.
-2. Run `npm run smoke` to verify public access before deployment.
+2. Run `npm run smoke -- --before-deploy` to verify public access before deployment.
 3. Merge the checked pull request into `master`.
 4. Confirm that the GitHub Actions deployment passes its checks.
 5. Open the map and API guide in a private browser window.
@@ -31,6 +31,7 @@ Keep credentials outside this repository and public build output.
 The repository has `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
 GitHub Actions checks changes before it deploys from `master`. Pull requests do not deploy.
 The workflow checks public access before and after deployment.
+The check before deployment uses existing routes. The check after deployment also requires the history page and API.
 Workers owns the DNS record for its custom domain.
 
 The `chris-net-infra` registry uses this row:
@@ -123,3 +124,22 @@ The infrastructure registry marks HandyMap as private.
 The deployment uses the existing account and does not change its billing plan.
 The available API tokens cannot read billing subscriptions; the infrastructure runbook records Workers Free.
 Both GitHub Actions secrets are configured.
+
+## Ping history
+
+The shared history uses the existing SQLite storage in `MapRoom`.
+It adds one table, an FTS5 trigram index, and insert and delete triggers.
+The constructor creates the schema on first start. No new service, binding, or migration is required.
+History starts empty. The server does not copy old active pings into it.
+
+Each accepted ping writes the live state and history in one transaction.
+The insert removes rows older than the newest 3,600, including their index entries.
+The existing limits remain: 80 title code points, 160 message code points, and a 2,048-character image URL.
+The raw fields total about 11 MB at those limits. JSON, SQLite, and the index add overhead.
+A history response reads at most 201 payloads into JavaScript memory.
+Searches with short terms can scan all 3,600 rows. Query traffic still consumes request and row-read quotas.
+Monitor database size, row reads, and row writes in the Cloudflare dashboard.
+
+`GET /api/history` supplies the public `/history` page.
+Pings still leave the map and live feed after 60 seconds.
+A code rollback does not remove history data. The previous code leaves the table in place.

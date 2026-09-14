@@ -26,6 +26,11 @@
   align-items: center;
   gap: 24px;
 }
+.header-actions nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
 .header-actions nav a {
   color: var(--muted);
   text-decoration: none;

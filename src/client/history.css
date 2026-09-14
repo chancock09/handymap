@@ -1,0 +1,91 @@
+@import url("./shared.css");
+.history-page {
+  max-width: 800px;
+  padding-block: 48px;
+}
+.history-page h1 {
+  font-size: clamp(32px, 6vw, 52px);
+  font-weight: 500;
+  letter-spacing: -1px;
+}
+#history-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+#history-form label {
+  width: 100%;
+  font-size: 14px;
+}
+#history-search {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+}
+.history-page button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--accent);
+  cursor: pointer;
+}
+.history-page button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.history-status {
+  overflow-wrap: anywhere;
+  font: 12px var(--mono);
+  color: var(--muted);
+  margin: 14px 0 6px;
+  min-height: 18px;
+}
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.history-list:empty {
+  display: none;
+}
+.history-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.history-list h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+.history-message {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #bdc9bf;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+.history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font: 10px var(--mono);
+  color: var(--muted);
+  margin: 0;
+}
+.history-meta a {
+  color: var(--accent);
+}
+.history-more {
+  width: 100%;
+  margin-top: 12px;
+}

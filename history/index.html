@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Search the last 3,600 pings shared on Hello World."
+    />
+    <meta name="theme-color" content="#101918" />
+    <title>Ping history — Hello World</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script type="module" src="/src/client/history.ts"></script>
+  </head>
+  <body>
+    <header class="site-header shell">
+      <a class="brand" href="/"
+        ><span class="brand-icon" aria-hidden="true">✳</span> Hello World</a
+      >
+      <nav aria-label="Main">
+        <a href="/">Back to the map <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
+    <main class="history-page shell">
+      <p class="eyebrow">A SHARED LITTLE WORLD</p>
+      <h1>Ping history<span class="accent">.</span></h1>
+      <p class="muted">
+        The last 3,600 pings, newest first. Each ping leaves the map after 60
+        seconds. It stays here until 3,600 newer pings replace it.
+      </p>
+      <form id="history-form" role="search">
+        <label for="history-search">Search titles and messages</label>
+        <input
+          id="history-search"
+          type="search"
+          maxlength="240"
+          autocomplete="off"
+          placeholder="Try “shipped” or “Tokyo”"
+        />
+        <button type="submit">Search</button>
+      </form>
+      <p id="history-status" class="history-status" role="status"></p>
+      <button id="history-retry" type="button" hidden>Try again</button>
+      <ol id="history-list" class="history-list" aria-label="Ping history"></ol>
+      <button id="history-more" class="history-more" type="button" hidden>
+        Show older pings
+      </button>
+      <p class="muted">
+        Search ignores case and differences in whitespace and Unicode form.
+        Every word must appear in the title or message.
+      </p>
+      <p><a href="/docs#history">Read the history API guide ↗</a></p>
+    </main>
+  </body>
+</html>

@@ -6,6 +6,14 @@ export const API_INTERVAL_MS = 5_000;
 export const API_SOURCE_INTERVAL_MS = 60_000;
 export const DUPLICATE_INTERVAL_MS = 300_000;
 export const BODY_LIMIT = 4_096;
+export const HISTORY_LIMIT = 3_600;
+
+export interface HistoryPage {
+  pings: Ping[];
+  total: number;
+  next: number | null;
+  serverTime: number;
+}
 
 export interface PingInput {
   latitude: number;

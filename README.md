@@ -4,7 +4,7 @@
 Anyone can open it, and anyone can send a ping with one JSON request or the form on the page.
 A ping has a location, a title, a sentence, and an optional image URL.
 It appears on every open map at once, pulses for two seconds, and disappears after 60 seconds.
-There are no accounts, no history, and no archive. It is a small WebSocket demo.
+There are no accounts. A public history keeps the last 3,600 pings.
 
 ## Use the map
 
@@ -25,6 +25,11 @@ Use the arrows or swipe to browse. Use **Pause** to stop the feed.
 The feed pauses during hover, keyboard use, and open cards or forms. It starts paused when reduced motion is enabled.
 A count button opens pings whose map targets overlap. The map and feed remove each ping when it expires.
 The form shows text limits, field errors, and the server's retry delay. It does not retry submissions automatically.
+**History** opens `/history`, with the last 3,600 accepted pings, newest first.
+Search titles and messages; every word you type must appear.
+The search ignores case, differences in whitespace, and equivalent Unicode forms. It matches inside words.
+The log uses the existing Durable Object storage. Reloads and server restarts preserve it.
+A ping stays in the log until 3,600 newer pings replace it.
 
 The site and API are public. Do not send anything private; everyone on the map sees it.
 
@@ -68,6 +73,21 @@ The API ignores extra fields and returns only the supported fields.
 Clients must use `Content-Type: application/json`.
 The API supports Cross-Origin Resource Sharing (CORS) without credentials, so a script on any site can send a ping.
 
+## Read the history
+
+`GET /api/history?q=hello&limit=50` returns `{ pings, total, next, serverTime }`.
+`pings` contains matching pings, newest first. `total` counts all current matches, before pagination.
+`next` is an opaque positive integer cursor, or `null` when no older matches remain.
+Send it as `before` with the same query to read the next page.
+New pings do not repeat rows on older pages. Retention can remove rows between requests.
+
+`q` is optional and accepts up to 240 Unicode code points.
+`limit` defaults to 50 and accepts integers from 1 through 200.
+Invalid, unknown, or repeated parameters return `400 invalid_query`.
+The endpoint supports public CORS with `GET`, `HEAD`, and `OPTIONS`. Responses use `Cache-Control: no-store`.
+The history page keeps the search in its URL so you can share it.
+Reload the page to see newer pings.
+
 ## Limits
 
 One Durable Object controls the world map.
@@ -88,7 +108,7 @@ Invalid requests and preflight requests do not consume the acceptance slot.
 The map rejects the same title and message for five minutes across both paths and all source addresses.
 The comparison normalizes Unicode with NFKC, converts text to lowercase, and collapses whitespace.
 Changes to coordinates or image URLs do not bypass this check.
-The room stores a SHA-256 hash for this check. Ping text still expires after 60 seconds.
+The room stores a SHA-256 hash for this check. Ping text leaves the map after 60 seconds and stays in the public history.
 A rejection returns `duplicate_content` with the remaining wait. Rejected requests do not extend the wait or consume a slot.
 This check matches normalized text pairs; it does not detect all similar messages.
 
@@ -133,9 +153,15 @@ The client uses the server timestamps for expiry and replaces its state on recon
 WebSocket Hibernation keeps idle connections open without a running event loop.
 A runtime auto-response handles `heartbeat` / `alive`; other client messages close the socket.
 
-The Durable Object stores active payloads and rate counters in one transaction before broadcast.
-Alarms remove expired payloads and duplicate hashes. They stop when neither remains.
-Rate counters remain stored. There is no public history endpoint.
+The Durable Object stores the live state and a history row in one transaction before broadcast.
+Alarms remove expired payloads from the live state and clear duplicate hashes. They stop when neither remains.
+Rate counters remain stored. History uses a table and an FTS5 trigram index in the existing SQLite storage.
+Each accepted ping removes rows older than the newest 3,600. History starts empty on the first deployment.
+No new service, binding, or Durable Object migration is required.
+The existing title, message, URL, and request limits still apply.
+The raw fields occupy about 11 MB at their maximum sizes; SQLite, JSON, and the index add overhead.
+The API reads at most 201 payloads per request. It does not load the full log into JavaScript memory.
+Search terms of three or more characters use the index. Shorter terms use a scan of the bounded table.
 Cloudflare manages storage recovery copies; this is not a guarantee of immediate physical erasure.
 Operational logs contain status codes, not submitted titles, sentences, or image URLs.
 

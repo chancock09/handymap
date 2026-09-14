@@ -38,10 +38,10 @@ export function error(
   );
 }
 
-export function cors(response: Response) {
+export function cors(response: Response, methods = "POST, OPTIONS") {
   const result = new Response(response.body, response);
   result.headers.set("Access-Control-Allow-Origin", "*");
-  result.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  result.headers.set("Access-Control-Allow-Methods", methods);
   result.headers.set("Access-Control-Allow-Headers", "Content-Type");
   result.headers.set("Access-Control-Expose-Headers", "Retry-After");
   result.headers.set("Access-Control-Max-Age", "86400");

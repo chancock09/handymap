@@ -12,6 +12,7 @@ import {
 } from "../protocol";
 import { error, validateInput } from "./http";
 import type { Env } from "./index";
+import { PingHistory, readHistoryQuery } from "./history";
 
 const ACCESS_GENERATION = "public-v2";
 
@@ -144,8 +145,11 @@ function limit(value: string, fallback: number) {
 }
 
 export class MapRoom extends DurableObject<Env> {
+  private history: PingHistory;
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    this.history = new PingHistory(ctx.storage.sql);
     // Sessions from an earlier release reconnect so they pass the current gate.
     for (const socket of ctx.getWebSockets()) {
       if (socket.deserializeAttachment() !== ACCESS_GENERATION)
@@ -161,6 +165,9 @@ export class MapRoom extends DurableObject<Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/api/history" && request.method === "GET")
+      return Response.json(this.history.read(readHistoryQuery(url)));
     if (request.method === "POST") {
       const { source, input, channel } = (await request.json()) as Submission;
       if (typeof source !== "string" || !source)
@@ -289,6 +296,7 @@ export class MapRoom extends DurableObject<Env> {
             fingerprints,
           } satisfies MapState);
           await transaction.setAlarm(nextExpiry(pings, fingerprints));
+          this.history.record(ping);
           return { ping };
         },
       );
