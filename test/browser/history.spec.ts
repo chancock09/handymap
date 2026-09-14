@@ -78,7 +78,9 @@ test("loads a shared search URL, debounces input, and handles empty results", as
   await expect(page.locator("#history-list h3")).toHaveText([
     "Hello from Kraków",
   ]);
-  await page.clock.install();
+  const now = Date.now();
+  await page.clock.install({ time: now });
+  await page.clock.pauseAt(now + 1_000);
   await page.locator("#history-search").fill("miss");
   await page.locator("#history-search").fill("missing");
   await page.clock.fastForward(299);
