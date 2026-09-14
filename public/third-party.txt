@@ -1,4 +1,4 @@
-HandyMap third-party notices
+Hello World third-party notices
 
 Map data derives from Natural Earth (public domain).
 https://www.naturalearthdata.com/

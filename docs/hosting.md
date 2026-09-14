@@ -1,14 +1,15 @@
-# Host HandyMap on Cloudflare
+# Host Hello World on Cloudflare
 
-HandyMap follows the Workers pattern in `chris-net-infra` and `olivia-trivia`.
-The public hostname is `handymap.gobbi.tech`.
+Hello World follows the Workers pattern in `chris-net-infra` and `olivia-trivia`.
+The public hostname is `hello-world.gobbi.tech`.
+The Worker and the repository keep the name `handymap`.
 
 ## Configuration
 
 | Item                  | Value                                                 |
 | --------------------- | ----------------------------------------------------- |
 | Worker                | `handymap`                                            |
-| Custom domain         | `handymap.gobbi.tech`                                 |
+| Custom domain         | `hello-world.gobbi.tech`                              |
 | Durable Object        | `MapRoom`, binding `MAP`, fixed name `world`          |
 | Storage               | SQLite, migration `v1`                                |
 | Production branch     | `master`                                              |
@@ -36,8 +37,8 @@ The `chris-net-infra` registry uses this row:
 
 ```json
 {
-  "host": "handymap.gobbi.tech",
-  "label": "HandyMap",
+  "host": "hello-world.gobbi.tech",
+  "label": "Hello World",
   "worker": "handymap",
   "repo": "handymap",
   "tier": "public"
@@ -52,7 +53,7 @@ Keep `workers.dev` and preview URLs disabled so the custom domain is the only en
 Run `npm run smoke` to test anonymous requests without cookies or redirect following.
 It requires `200` for the map, docs, assets, and health check, a `400` for an empty API POST, and CORS headers on preflight.
 It fails when any of those requests redirects to the Access login.
-Run `sh scripts/gate-check.sh handymap.gobbi.tech` in `chris-net-infra` to verify the registry entry.
+Run `sh scripts/gate-check.sh hello-world.gobbi.tech` in `chris-net-infra` to verify the registry entry.
 The local tests check API behavior, shared updates, expiry, and the full-screen map.
 
 ## Quotas and operations
@@ -97,6 +98,12 @@ Those names locate the stored rate counters and active pings.
 A rollback does not undo Durable Object data changes.
 
 Run `npm run smoke` after rollback. Do not change Access policies for other sites.
+
+## Access record — 2026-09-14
+
+The site was renamed from HandyMap to Hello World. The hostname moved from `handymap.gobbi.tech` to `hello-world.gobbi.tech`.
+The Worker name, the repository name, and the Durable Object names did not change.
+`hello-world.gobbi.tech` joined the `public sites (bypass)` application before the deploy; `handymap.gobbi.tech` left it after the old custom domain was removed.
 
 ## Access record — 2026-09-11
 
