@@ -177,7 +177,8 @@ npm audit
 The server tests check races, time boundaries, validation, CORS, expiry, eviction, and connection caps.
 Browser tests check shared updates, form results, cards, images, mobile layouts, and reduced motion.
 The link check prevents accidental links to private infrastructure hostnames.
-GitHub Actions runs the checks before a production deployment from `master`.
+Run these checks locally before you merge.
+A push to `master` deploys through GitHub Actions: build, link check, access checks, and upload, without tests.
 
 The `sharp` override selects the patched `0.35.4` release for the local Cloudflare tools.
 It addresses advisory GHSA-rgj7-g3m4-5g8c. The deployed Worker does not use image processing.
