@@ -25,11 +25,11 @@ Keep credentials outside this repository and public build output.
 1. Run `npm ci`, `npm run check`, and `npm run test:browser`.
 2. Run `npm run smoke -- --before-deploy` to verify public access before deployment.
 3. Merge the checked pull request into `master`.
-4. Confirm that the GitHub Actions deployment passes its checks.
+4. Confirm that the GitHub Actions deployment passes its access checks.
 5. Open the map and API guide in a private browser window.
 
 The repository has `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
-GitHub Actions checks changes before it deploys from `master`. Pull requests do not deploy.
+A push to `master` deploys through GitHub Actions without tests. Pull requests do not start the workflow.
 The workflow checks public access before and after deployment.
 The check before deployment uses existing routes. The check after deployment also requires the history page and API.
 Workers owns the DNS record for its custom domain.
