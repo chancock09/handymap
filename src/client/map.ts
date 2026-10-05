@@ -135,6 +135,9 @@ function showCard(
   if (ping.imageUrl) {
     const img = document.createElement("img");
     img.alt = "";
+    img.width = 54;
+    img.height = 54;
+    img.loading = "lazy";
     img.referrerPolicy = "no-referrer";
     img.decoding = "async";
     img.addEventListener(
