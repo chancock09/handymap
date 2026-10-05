@@ -18,7 +18,8 @@
     "deploy": "npm run check && wrangler deploy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "share-image": "node scripts/make-share-image.mjs"
   },
   "dependencies": {
     "d3-geo": "^3.1.1",
