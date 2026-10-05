@@ -32,6 +32,10 @@
   gap: 18px;
 }
 .header-actions nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -14px;
   color: var(--muted);
   text-decoration: none;
   font-size: 13px;
@@ -81,12 +85,16 @@
 }
 .map-credit {
   flex: none;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--muted);
   text-align: right;
   margin: 8px 32px 14px;
 }
 .map-credit a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -14px;
   color: inherit;
 }
 .map-notices {
@@ -129,7 +137,7 @@
   z-index: 20;
 }
 .connection {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -300,7 +308,7 @@ fieldset {
 }
 legend {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 12px;
   color: var(--accent);
   padding: 0;
   margin-bottom: 11px;
@@ -357,7 +365,7 @@ textarea {
 .optional {
   float: right;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 12px;
 }
 .primary-button {
   display: flex;
@@ -451,12 +459,7 @@ textarea {
   overflow-wrap: anywhere;
 }
 .ping-card .eyebrow {
-  font-size: 9px;
   margin-top: 15px;
-}
-.ping-card .field-help {
-  font-size: 10px !important;
-  color: var(--muted);
 }
 .card-picture {
   width: 54px;
@@ -519,7 +522,7 @@ textarea {
   .header-actions .live-status {
     order: 1;
     margin-left: auto;
-    font-size: 11px;
+    font-size: 12px;
   }
   .presence {
     font-size: 12px;
@@ -544,7 +547,6 @@ textarea {
   }
   .map-credit {
     margin: 6px 18px 10px;
-    font-size: 9px;
   }
   .map-notices {
     left: 18px;
@@ -553,7 +555,7 @@ textarea {
   }
   .fullscreen-button {
     padding: 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 @media (max-height: 500px) {

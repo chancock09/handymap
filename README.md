@@ -132,7 +132,7 @@ See [the deployment guide](docs/hosting.md) for operations and quota checks.
 - `src/client/`: the world map, form, cards, styles, and API examples.
 - `src/protocol.ts`: shared payload types and lifetimes.
 - `index.html` and `docs/index.html`: the map page and API guide.
-- `public/`: static headers, favicon, error page, and third-party notices.
+- `public/`: static headers, favicon, error page, robots and sitemap files, the share image, and third-party notices. `npm run share-image` redraws `share.png`.
 - `test/`: Worker integration tests and browser tests.
 
 Vite bundles TypeScript, D3 geographic tools, and World Atlas geometry.

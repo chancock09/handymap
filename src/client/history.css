@@ -78,7 +78,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
-  font: 10px var(--mono);
+  font: 12px var(--mono);
   color: var(--muted);
   margin: 0;
 }
@@ -88,4 +88,10 @@
 .history-more {
   width: 100%;
   margin-top: 12px;
+}
+.history-page p > a:only-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-block: -11px;
 }
