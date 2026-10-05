@@ -48,7 +48,7 @@
   background: #1d2c25;
   border-radius: 8px 8px 0 0;
   margin-top: 22px;
-  font: 9px var(--mono);
+  font: 12px var(--mono);
   letter-spacing: 1px;
   color: var(--muted);
 }
@@ -56,9 +56,11 @@
   border: 0;
   background: none;
   color: var(--accent);
-  font: 11px var(--sans);
+  font: 12px var(--sans);
   cursor: pointer;
-  padding: 4px;
+  min-height: 44px;
+  padding: 0 8px;
+  margin-block: -12px;
 }
 pre {
   background: var(--panel);
@@ -84,7 +86,7 @@ table {
 th {
   color: var(--muted);
   font-weight: 400;
-  font-size: 11px;
+  font-size: 12px;
 }
 td,
 th {
@@ -97,7 +99,7 @@ th:first-child {
 }
 td code {
   color: var(--accent);
-  font-size: 11px;
+  font-size: 12px;
 }
 .table-wrap {
   overflow: auto;
@@ -113,11 +115,8 @@ td code {
 .guide-note p:last-child {
   margin-bottom: 0;
 }
-.guide-note .eyebrow {
-  font-size: 10px;
-}
 .copy-status {
-  font-size: 11px !important;
+  font-size: 12px !important;
   color: var(--accent) !important;
 }
 .copy-status:empty {
@@ -134,7 +133,7 @@ td code {
     font-size: 23px;
   }
   pre {
-    font-size: 11px;
+    font-size: 12px;
     padding: 16px;
   }
   .guide p {
@@ -143,8 +142,5 @@ td code {
   td,
   th {
     padding: 10px 7px;
-  }
-  .site-footer a {
-    font-size: 9px;
   }
 }
